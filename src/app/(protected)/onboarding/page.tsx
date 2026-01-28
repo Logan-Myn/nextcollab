@@ -313,6 +313,7 @@ export default function OnboardingPage() {
                       alt={profile.username}
                       width={64}
                       height={64}
+                      unoptimized
                       className="w-16 h-16 rounded-full object-cover border-2 border-[var(--border)]"
                     />
                   ) : (
@@ -336,8 +337,14 @@ export default function OnboardingPage() {
 
                 {/* Bio */}
                 {profile.bio && (
-                  <p className="text-sm text-[var(--foreground)] mb-6 leading-relaxed">
-                    {profile.bio}
+                  <p className="text-sm text-[var(--foreground)] mb-6 leading-relaxed whitespace-pre-line">
+                    {profile.bio
+                      .replace(/\\n/g, "\n")
+                      .replace(/\\u[\dA-Fa-f]{4}/g, (match) =>
+                        String.fromCodePoint(
+                          parseInt(match.replace("\\u", ""), 16)
+                        )
+                      )}
                   </p>
                 )}
 

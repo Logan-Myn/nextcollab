@@ -1,6 +1,14 @@
 const XPOZ_SERVICE_URL = process.env.XPOZ_SERVICE_URL;
 const XPOZ_SERVICE_KEY = process.env.XPOZ_SERVICE_KEY;
 
+function cleanBioText(bio: string): string {
+  return bio
+    .replace(/\\n/g, "\n")
+    .replace(/\\u[\dA-Fa-f]{4}/g, (match) =>
+      String.fromCodePoint(parseInt(match.replace("\\u", ""), 16))
+    );
+}
+
 export interface InstagramProfile {
   username: string;
   fullName: string;
@@ -38,5 +46,9 @@ export async function fetchInstagramProfile(
   }
 
   const json = await res.json();
-  return json.data as InstagramProfile;
+  const profile = json.data as InstagramProfile;
+  if (profile.bio) {
+    profile.bio = cleanBioText(profile.bio);
+  }
+  return profile;
 }
