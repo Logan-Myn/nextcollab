@@ -311,6 +311,8 @@ export default function OnboardingPage() {
                     <img
                       src={profile.profilePicture}
                       alt={profile.username}
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
                       className="w-16 h-16 rounded-full object-cover border-2 border-[var(--border)]"
                       onError={(e) => {
                         // Hide broken image and show fallback
