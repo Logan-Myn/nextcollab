@@ -41,15 +41,15 @@
 |---|------|--------|-------|
 | 1 | Auth Pages (`/login`, `/signup`) | ✅ Complete | Better-Auth email/password |
 | 2 | Protected Routes Middleware | ✅ Complete | Guard `/dashboard/*`, `/onboarding/*` |
-| 3 | OVH Xpoz Service | ⬜ Pending | MCP client with `@modelcontextprotocol/sdk` |
+| 3 | OVH Xpoz Service | ✅ Complete | MCP client deployed on Dokploy (158.69.125.139:4000) |
 | 4 | Stripe Setup | ⬜ Pending | Products, webhooks, customer portal |
 
 ### Week 2: Onboarding
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 5 | Onboarding Flow | ⬜ Pending | Username → Xpoz fetch → Results |
-| 6 | Creator Profile API | ⬜ Pending | CRUD for `creator_profile` table |
+| 5 | Onboarding Flow | ✅ Complete | 3-step flow: username → analyzing → results → save |
+| 6 | Creator Profile API | ✅ Complete | /api/instagram/profile, /save-profile, /me |
 | 7 | Brand Seeding Script | ⬜ Pending | Scrape 500+ brands via Xpoz |
 | 8 | Brand API | ⬜ Pending | Search, filter, detail endpoints |
 
@@ -57,7 +57,7 @@
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 9 | Dashboard Layout | ⬜ Pending | Sidebar, header, responsive shell |
+| 9 | Dashboard Layout | ✅ Complete | Real profile data, stats, resync, creator card in sidebar |
 | 10 | Search Page | ⬜ Pending | Filters + results grid |
 | 11 | Brand Card Component | ⬜ Pending | Reusable card with match score |
 | 12 | Brand Detail Page | ⬜ Pending | Full info + partnerships |
@@ -206,14 +206,37 @@ bun add lucide-react
 - `src/app/(auth)/login/page.tsx` - Login form with validation
 - `src/app/(auth)/signup/page.tsx` - Signup form with password requirements
 - `src/app/(protected)/layout.tsx` - Protected layout with session check
-- `src/app/(protected)/onboarding/page.tsx` - Instagram username input
-- `src/app/(protected)/dashboard/page.tsx` - Dashboard shell with sidebar
 - `src/middleware.ts` - Route protection middleware
 
 **Dependencies added:**
 - `react-hook-form` - Form handling
 - `zod` + `@hookform/resolvers` - Validation
 - `lucide-react` - Icons
+
+### Task 3: OVH Xpoz Service (2025-01-28)
+
+**Separate repo:** `nextcollab-xpoz-service` deployed on Dokploy (OVH)
+- Express 5 + MCP SDK connecting to Xpoz MCP at `mcp.xpoz.ai`
+- Xpoz tools: `getInstagramUser`, `getInstagramPostsByUser`, `getInstagramPostsByKeywords`
+- Parameters: `identifier` + `identifierType` (not `username`)
+- Response format: YAML-like text (custom parser)
+- API key auth between Vercel and OVH
+- Health check, cron jobs, brand sync endpoint
+
+### Task 5, 6 & 9: Onboarding + Creator Profile + Dashboard (2025-01-28)
+
+**Files created/updated:**
+- `src/lib/xpoz.ts` - Xpoz service client for Next.js
+- `src/app/api/instagram/profile/route.ts` - Proxy to OVH Xpoz service
+- `src/app/api/instagram/save-profile/route.ts` - Save creator profile to DB
+- `src/app/api/instagram/me/route.ts` - Get creator profile from DB
+- `src/app/(protected)/onboarding/page.tsx` - Full 3-step onboarding flow
+- `src/app/(protected)/dashboard/page.tsx` - Real profile data, stats, resync
+- `next.config.ts` - Instagram CDN image domains
+
+**Env vars added:**
+- `XPOZ_SERVICE_URL` - OVH service URL
+- `XPOZ_SERVICE_KEY` - API key for service auth
 
 ---
 

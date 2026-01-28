@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import {
@@ -15,8 +16,22 @@ import {
   TrendingUp,
   Users,
   Target,
+  Instagram,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+
+interface CreatorProfile {
+  id: string;
+  instagramUsername: string | null;
+  followers: number | null;
+  engagementRate: string | null;
+  niche: string | null;
+  bio: string | null;
+  profilePicture: string | null;
+  lastSyncedAt: string | null;
+}
 
 const navItems = [
   { href: "/dashboard", icon: Sparkles, label: "For You", active: true },
@@ -25,21 +40,83 @@ const navItems = [
   { href: "/dashboard/alerts", icon: Bell, label: "Alerts" },
 ];
 
-const stats = [
-  { label: "Match Score", value: "87%", icon: Target, color: "text-green-500" },
-  { label: "New Matches", value: "12", icon: TrendingUp, color: "text-[var(--accent)]" },
-  { label: "Saved Brands", value: "5", icon: Heart, color: "text-pink-500" },
-];
+function formatNumber(n: number): string {
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return String(n);
+}
+
+function getCreatorTier(followers: number): string {
+  if (followers >= 1000000) return "Mega";
+  if (followers >= 100000) return "Macro";
+  if (followers >= 10000) return "Mid-tier";
+  if (followers >= 1000) return "Micro";
+  return "Nano";
+}
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profile, setProfile] = useState<CreatorProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const fetchProfile = useCallback(async () => {
+    if (!session?.user?.id) return;
+
+    try {
+      const res = await fetch(
+        `/api/instagram/me?userId=${encodeURIComponent(session.user.id)}`
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setProfile(json.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  const handleResync = async () => {
+    if (!profile?.instagramUsername || !session?.user?.id) return;
+
+    setIsSyncing(true);
+    try {
+      const res = await fetch(
+        `/api/instagram/profile?username=${encodeURIComponent(profile.instagramUsername)}`
+      );
+      if (res.ok) {
+        const json = await res.json();
+        await fetch("/api/instagram/save-profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: session.user.id,
+            profile: json.data,
+          }),
+        });
+        await fetchProfile();
+      }
+    } catch (error) {
+      console.error("Resync failed:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
     router.push("/");
   };
+
+  const hasProfile = profile?.instagramUsername;
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
@@ -59,6 +136,37 @@ export default function DashboardPage() {
             </span>
           </Link>
         </div>
+
+        {/* Creator card in sidebar */}
+        {hasProfile && (
+          <div className="px-4 pt-4">
+            <div className="p-3 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)]">
+              <div className="flex items-center gap-3">
+                {profile.profilePicture ? (
+                  <Image
+                    src={profile.profilePicture}
+                    alt={profile.instagramUsername || ""}
+                    width={36}
+                    height={36}
+                    className="w-9 h-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-white text-xs font-bold">
+                    {profile.instagramUsername?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    @{profile.instagramUsername}
+                  </p>
+                  <p className="text-xs text-[var(--muted)]">
+                    {formatNumber(profile.followers || 0)} followers
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 p-4">
@@ -179,53 +287,158 @@ export default function DashboardPage() {
               className="text-2xl md:text-3xl font-bold mb-2"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              Welcome back, {session?.user?.name?.split(" ")[0] || "Creator"}
+              Welcome back,{" "}
+              {session?.user?.name?.split(" ")[0] || "Creator"}
             </h1>
             <p className="text-[var(--muted)]">
-              Here are your personalized brand matches for today.
+              {hasProfile
+                ? "Here are your personalized brand matches for today."
+                : "Connect your Instagram to unlock AI-powered brand matches."}
             </p>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-5 card-hover"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-[var(--muted)]">{stat.label}</span>
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
+          {profileLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
+            </div>
+          ) : hasProfile ? (
+            <>
+              {/* Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-5 card-hover">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-[var(--muted)]">
+                      Followers
+                    </span>
+                    <Users className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div
+                    className="text-3xl font-bold"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {formatNumber(profile.followers || 0)}
+                  </div>
+                  <p className="text-xs text-[var(--muted)] mt-1">
+                    {getCreatorTier(profile.followers || 0)} creator
+                  </p>
                 </div>
-                <div
-                  className="text-3xl font-bold"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  {stat.value}
+
+                <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-5 card-hover">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-[var(--muted)]">
+                      Engagement
+                    </span>
+                    <TrendingUp className="w-5 h-5 text-green-500" />
+                  </div>
+                  <div
+                    className="text-3xl font-bold"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {profile.engagementRate
+                      ? `${profile.engagementRate}%`
+                      : "---"}
+                  </div>
+                  <p className="text-xs text-[var(--muted)] mt-1">
+                    {profile.engagementRate
+                      ? Number(profile.engagementRate) >= 3
+                        ? "Above average"
+                        : "Room to grow"
+                      : "Analyzing..."}
+                  </p>
+                </div>
+
+                <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-5 card-hover">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-[var(--muted)]">Niche</span>
+                    <Target className="w-5 h-5 text-[var(--accent)]" />
+                  </div>
+                  <div
+                    className="text-3xl font-bold capitalize"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {profile.niche || "---"}
+                  </div>
+                  <p className="text-xs text-[var(--muted)] mt-1">
+                    {profile.niche
+                      ? "Detected from your content"
+                      : "Not enough data yet"}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Empty state - For You */}
-          <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-12 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--accent-light)] flex items-center justify-center mx-auto mb-6">
-              <Sparkles className="w-8 h-8 text-[var(--accent)]" />
+              {/* Profile summary + resync */}
+              <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6 mb-8">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center">
+                      <Instagram className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-medium">
+                        @{profile.instagramUsername}
+                      </p>
+                      <p className="text-xs text-[var(--muted)]">
+                        {profile.lastSyncedAt
+                          ? `Last synced ${new Date(profile.lastSyncedAt).toLocaleDateString()}`
+                          : "Never synced"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleResync}
+                    disabled={isSyncing}
+                    className="btn btn-secondary text-sm py-2 px-4 disabled:opacity-50"
+                  >
+                    {isSyncing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )}
+                    {isSyncing ? "Syncing..." : "Resync"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Matches placeholder */}
+              <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-12 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-[var(--accent-light)] flex items-center justify-center mx-auto mb-6">
+                  <Sparkles className="w-8 h-8 text-[var(--accent)]" />
+                </div>
+                <h2
+                  className="text-xl font-bold mb-2"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  Brand matches coming soon
+                </h2>
+                <p className="text-[var(--muted)] max-w-md mx-auto">
+                  We&apos;re building your personalized brand database. Your
+                  AI-powered matches will appear here once our brand sync is
+                  complete.
+                </p>
+              </div>
+            </>
+          ) : (
+            /* Empty state - no profile */
+            <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-12 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-[var(--accent-light)] flex items-center justify-center mx-auto mb-6">
+                <Sparkles className="w-8 h-8 text-[var(--accent)]" />
+              </div>
+              <h2
+                className="text-xl font-bold mb-2"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Complete your profile
+              </h2>
+              <p className="text-[var(--muted)] mb-6 max-w-md mx-auto">
+                Add your Instagram username to unlock AI-powered brand matches
+                tailored to your content and audience.
+              </p>
+              <Link href="/onboarding" className="btn btn-primary">
+                <Instagram className="w-5 h-5" />
+                Connect Instagram
+              </Link>
             </div>
-            <h2
-              className="text-xl font-bold mb-2"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Complete your profile
-            </h2>
-            <p className="text-[var(--muted)] mb-6 max-w-md mx-auto">
-              Add your Instagram username to unlock AI-powered brand matches tailored to your content and audience.
-            </p>
-            <Link href="/onboarding" className="btn btn-primary">
-              <Users className="w-5 h-5" />
-              Connect Instagram
-            </Link>
-          </div>
+          )}
         </div>
       </main>
     </div>

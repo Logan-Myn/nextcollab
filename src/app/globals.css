@@ -287,3 +287,13 @@ select:focus {
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
