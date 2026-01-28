@@ -4,7 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NextCollab is an Instagram influencer sponsorship platform (similar to MeetSponsors for YouTube). It connects Instagram creators with brands/sponsors through a two-sided marketplace with AI-powered matching.
+NextCollab is a creator tool for Instagram influencers (similar to MeetSponsors for YouTube). It helps creators find and pitch brand sponsors through a searchable database with AI-powered matching.
+
+**Key distinction:** This is NOT a marketplace. Creators search for brands to pitch - brands don't post opportunities.
+
+**Documentation:**
+- `Docs/NextCollab_research.md` - Market research, competitor analysis, strategic decisions
+- `Docs/NextCollab_app_overview.md` - Product specs, features, schema, roadmap
 
 ## Commands
 
@@ -64,10 +70,11 @@ bun db:studio    # Open Drizzle Studio GUI
 
 ## Platform Features
 
-- **Data Collection:** Instagram Graph API + Xpoz MCP for creator/brand intelligence
-- **Databases:** Creator profiles, Brand/Sponsor profiles
-- **Matching Algorithm:** ML-based recommendations scoring creator-brand fit
-- **Features:** Search/discovery, messaging, analytics dashboards
+- **Brand Database:** Scraped via Xpoz MCP (#ad, #sponsored detection)
+- **AI Matching:** "For You" feed with personalized brand recommendations
+- **Creator Profiles:** Auto-populated from Instagram username (Xpoz) + optional OAuth
+- **Onboarding:** Username-first (low friction) → OAuth optional for deeper insights
+- **Target:** EU creators first, agencies as secondary market
 
 ## Key Conventions
 
