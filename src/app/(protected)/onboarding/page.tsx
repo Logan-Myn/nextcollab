@@ -311,21 +311,13 @@ export default function OnboardingPage() {
                     <img
                       src={profile.profilePicture}
                       alt={profile.username}
-                      referrerPolicy="no-referrer"
-                      crossOrigin="anonymous"
                       className="w-16 h-16 rounded-full object-cover border-2 border-[var(--border)]"
-                      onError={(e) => {
-                        // Hide broken image and show fallback
-                        e.currentTarget.style.display = "none";
-                        e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                      }}
                     />
-                  ) : null}
-                  <div
-                    className={`w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-white text-xl font-bold ${profile.profilePicture ? "hidden" : ""}`}
-                  >
-                    {profile.username.charAt(0).toUpperCase()}
-                  </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-white text-xl font-bold">
+                      {profile.username.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div>
                     <h2
                       className="text-xl font-bold flex items-center gap-2"
