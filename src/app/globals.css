@@ -251,3 +251,39 @@ body {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   }
 }
+
+/* Form inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface-elevated) inset;
+  -webkit-text-fill-color: var(--foreground);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Focus ring animation */
+@keyframes focus-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(232, 93, 76, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 4px rgba(232, 93, 76, 0);
+  }
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  animation: focus-ring 0.3s ease-out;
+}
+
+/* Spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
