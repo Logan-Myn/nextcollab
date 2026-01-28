@@ -1,21 +1,29 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "./db";
+import { getDb } from "./db";
 import * as schema from "./db/schema";
 
-export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    schema,
-  }),
-  emailAndPassword: {
-    enabled: true,
-  },
-  socialProviders: {
-    // Add OAuth providers here as needed
-    // google: {
-    //   clientId: process.env.GOOGLE_CLIENT_ID!,
-    //   clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    // },
-  },
-});
+let authInstance: ReturnType<typeof betterAuth> | null = null;
+
+export function getAuth() {
+  if (!authInstance) {
+    authInstance = betterAuth({
+      database: drizzleAdapter(getDb(), {
+        provider: "pg",
+        schema,
+      }),
+      emailAndPassword: {
+        enabled: true,
+      },
+      socialProviders: {
+        // Add OAuth providers here as needed
+        // google: {
+        //   clientId: process.env.GOOGLE_CLIENT_ID!,
+        //   clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        // },
+      },
+    });
+  }
+  return authInstance;
+}
+
