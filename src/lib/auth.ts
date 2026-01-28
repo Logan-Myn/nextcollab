@@ -47,7 +47,7 @@ export function getAuth() {
             `,
           });
         },
-        sendResetPassword: async ({ user, url }) => {
+        sendResetPassword: async ({ user, url }: { user: { email: string; name: string }; url: string }) => {
           if (!resend) {
             console.log("Resend not configured. Reset URL:", url);
             return;
