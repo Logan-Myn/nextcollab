@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import {
@@ -308,19 +307,23 @@ export default function OnboardingPage() {
                 {/* Profile header */}
                 <div className="flex items-center gap-4 mb-6">
                   {profile.profilePicture ? (
-                    <Image
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       src={profile.profilePicture}
                       alt={profile.username}
-                      width={64}
-                      height={64}
-                      unoptimized
                       className="w-16 h-16 rounded-full object-cover border-2 border-[var(--border)]"
+                      onError={(e) => {
+                        // Hide broken image and show fallback
+                        e.currentTarget.style.display = "none";
+                        e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                      }}
                     />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-white text-xl font-bold">
-                      {profile.username.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  ) : null}
+                  <div
+                    className={`w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-white text-xl font-bold ${profile.profilePicture ? "hidden" : ""}`}
+                  >
+                    {profile.username.charAt(0).toUpperCase()}
+                  </div>
                   <div>
                     <h2
                       className="text-xl font-bold flex items-center gap-2"
