@@ -115,6 +115,7 @@ export const brand = pgTable("brand", {
   typicalCreatorNiches: jsonb("typical_creator_niches"),
   avgCreatorFollowers: integer("avg_creator_followers"),
   preferredPostTypes: jsonb("preferred_post_types"),
+  profilePicture: text("profile_picture"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -139,31 +140,6 @@ export const discoveredCreator = pgTable("discovered_creator", {
   classificationConfidence: integer("classification_confidence"),
   classifiedAt: timestamp("classified_at"),
   classifiedBy: text("classified_by"), // 'ai', 'heuristic', 'manual'
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Brand candidate queue (discovery pipeline)
-export const brandCandidate = pgTable("brand_candidate", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  instagramUsername: text("instagram_username").notNull().unique(),
-  fullName: text("full_name"),
-  bio: text("bio"),
-  followers: integer("followers"),
-  following: integer("following"),
-  postsCount: integer("posts_count"),
-  profilePicture: text("profile_picture"),
-  hasWebsite: boolean("has_website").default(false),
-  websiteUrl: text("website_url"),
-  isVerifiedAccount: boolean("is_verified_account").default(false),
-  discoverySource: text("discovery_source").notNull(),
-  discoveryQuery: text("discovery_query"),
-  preScore: integer("pre_score").default(0),
-  status: text("status").notNull().default("pending"),
-  aiConfidence: integer("ai_confidence"),
-  aiCategory: text("ai_category"),
-  aiRejectionReason: text("ai_rejection_reason"),
-  validationAttempts: integer("validation_attempts").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
