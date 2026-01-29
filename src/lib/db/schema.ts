@@ -134,6 +134,11 @@ export const discoveredCreator = pgTable("discovered_creator", {
   externalUrl: text("external_url"),
   partnershipCount: integer("partnership_count").default(0),
   lastSeenAt: timestamp("last_seen_at"),
+  // Entity classification (AI-powered)
+  entityType: text("entity_type").default("unknown"), // 'creator', 'brand', 'unknown'
+  classificationConfidence: integer("classification_confidence"),
+  classifiedAt: timestamp("classified_at"),
+  classifiedBy: text("classified_by"), // 'ai', 'heuristic', 'manual'
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
