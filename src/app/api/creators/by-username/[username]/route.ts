@@ -69,12 +69,6 @@ export async function GET(
       .orderBy(sql`MAX(${partnership.detectedAt}) DESC`)
       .limit(20);
 
-    // Calculate average brand size
-    const brandFollowers = brandsWorkedWith.map(b => b.brandFollowers || 0).filter(f => f > 0);
-    const avgBrandFollowers = brandFollowers.length > 0
-      ? Math.round(brandFollowers.reduce((a, b) => a + b, 0) / brandFollowers.length)
-      : 0;
-
     // Get similar creators (same niche, similar follower range)
     const followerMin = Math.floor(followers * 0.5);
     const followerMax = Math.ceil(followers * 2);
@@ -123,7 +117,6 @@ export async function GET(
           engagementRate: Math.round(engagementRate * 100) / 100,
           followerTier: getFollowerTier(followers),
           lastCollabAt: stats.lastCollabAt,
-          avgBrandFollowers,
         },
 
         // Brand collaborations

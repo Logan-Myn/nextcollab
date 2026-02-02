@@ -10,8 +10,6 @@ import {
   ArrowLeft,
   ExternalLink,
   Share2,
-  Users,
-  Zap,
   Globe,
   CheckCircle2,
   Loader2,
@@ -19,8 +17,10 @@ import {
   Sparkles,
   ChevronRight,
   Building2,
-  Clock,
-  TrendingUp,
+  Zap,
+  LayoutGrid,
+  Handshake,
+  Users,
 } from "lucide-react";
 
 interface BrandWorkedWith {
@@ -64,7 +64,6 @@ interface CreatorDetail {
     engagementRate: number;
     followerTier: string;
     lastCollabAt: string | null;
-    avgBrandFollowers: number;
   };
   brandsWorkedWith: BrandWorkedWith[];
   similarCreators: SimilarCreator[];
@@ -101,21 +100,6 @@ function timeAgo(dateStr: string | null): string {
   return `${Math.floor(diffDays / 365)}y ago`;
 }
 
-function getTierLabel(tier: string): { label: string; class: string } {
-  switch (tier) {
-    case "mega":
-      return { label: "Mega Creator", class: "text-[var(--accent)]" };
-    case "macro":
-      return { label: "Macro Creator", class: "text-[var(--success)]" };
-    case "mid":
-      return { label: "Mid-tier Creator", class: "text-[var(--warning)]" };
-    case "micro":
-      return { label: "Micro Creator", class: "text-[var(--accent-secondary)]" };
-    default:
-      return { label: "Nano Creator", class: "text-[var(--muted)]" };
-  }
-}
-
 type TabType = "overview" | "collabs" | "similar";
 
 export default function CreatorDetailPage() {
@@ -129,6 +113,7 @@ export default function CreatorDetailPage() {
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [statsRevealed, setStatsRevealed] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -151,6 +136,7 @@ export default function CreatorDetailPage() {
       if (res.ok) {
         const json = await res.json();
         setCreator(json.data);
+        setTimeout(() => setStatsRevealed(true), 100);
       } else if (res.status === 404) {
         router.push("/dashboard");
       }
@@ -177,7 +163,14 @@ export default function CreatorDetailPage() {
     }
   };
 
-  const tier = creator ? getTierLabel(creator.stats.followerTier) : null;
+  const stats = creator
+    ? [
+        { value: formatNumber(creator.followers), label: "FOLLOWERS" },
+        { value: creator.stats.totalCollabs.toString(), label: "COLLABS" },
+        { value: creator.stats.uniqueBrands.toString(), label: "BRANDS" },
+        { value: timeAgo(creator.stats.lastCollabAt), label: "LAST COLLAB" },
+      ]
+    : [];
 
   return (
     <DashboardShell profile={profile} profileLoading={profileLoading}>
@@ -196,53 +189,48 @@ export default function CreatorDetailPage() {
             <span className="text-sm font-medium">Back</span>
           </button>
 
-          {/* Hero Section */}
-          <section className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] overflow-hidden animate-fade-up">
-            {/* Profile Content */}
+          {/* Hero Section - Shadow-first, no heavy borders */}
+          <section className="bg-[var(--surface)] rounded-2xl shadow-lg overflow-hidden animate-fade-up">
             <div className="p-6 sm:p-8">
               {/* Top row: Avatar + Info + Actions */}
-              <div className="flex flex-col sm:flex-row sm:items-start gap-5 mb-6">
-                {/* Avatar */}
+              <div className="flex flex-col sm:flex-row sm:items-start gap-6 mb-8">
+                {/* Larger Avatar (104px) */}
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 rounded-2xl bg-[var(--surface-elevated)] border-2 border-[var(--border)] flex items-center justify-center overflow-hidden">
+                  <div className="w-26 h-26 rounded-2xl bg-[var(--surface-elevated)] flex items-center justify-center overflow-hidden shadow-md" style={{ width: '104px', height: '104px' }}>
                     {creator.profilePicture ? (
                       <Image
                         src={creator.profilePicture}
                         alt={creator.fullName || creator.instagramUsername || "Creator"}
-                        width={80}
-                        height={80}
+                        width={104}
+                        height={104}
                         unoptimized
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-2xl font-bold text-[var(--accent)]">
+                      <span className="text-3xl font-bold text-[var(--accent)]">
                         {(creator.instagramUsername || "?").charAt(0).toUpperCase()}
                       </span>
                     )}
                   </div>
-                  {creator.isVerified && (
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[var(--accent-secondary)] rounded-full flex items-center justify-center border-2 border-[var(--surface)]">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                    </div>
-                  )}
                 </div>
 
                 {/* Creator Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="text-2xl font-bold">
+                  {/* Name with inline verified badge */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
                       {creator.fullName || `@${creator.instagramUsername}`}
                     </h1>
+                    {creator.isVerified && (
+                      <CheckCircle2 className="w-5 h-5 text-[var(--accent-secondary)] shrink-0" />
+                    )}
                   </div>
-                  <p className="text-[var(--muted)] mt-0.5">@{creator.instagramUsername}</p>
-                  <div className="flex items-center gap-2 mt-3 flex-wrap">
+                  <p className="text-[var(--muted)] mt-1">@{creator.instagramUsername}</p>
+
+                  {/* Badges */}
+                  <div className="flex items-center gap-2 mt-4 flex-wrap">
                     {creator.niche && (
                       <span className="badge badge-accent">{creator.niche}</span>
-                    )}
-                    {tier && (
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] ${tier.class}`}>
-                        {tier.label}
-                      </span>
                     )}
                     {creator.externalUrl && (
                       <a
@@ -282,75 +270,82 @@ export default function CreatorDetailPage() {
                 </div>
               </div>
 
-              {/* Stats Bar - More meaningful stats for creators */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)]">
-                <div className="text-center">
-                  <p className="text-2xl font-bold">{formatNumber(creator.followers)}</p>
-                  <p className="text-xs text-[var(--muted)] mt-1 flex items-center justify-center gap-1">
-                    <Users className="w-3 h-3" />
-                    Followers
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold">{creator.stats.uniqueBrands}</p>
-                  <p className="text-xs text-[var(--muted)] mt-1 flex items-center justify-center gap-1">
-                    <Building2 className="w-3 h-3" />
-                    Brands
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold">{formatNumber(creator.stats.avgBrandFollowers)}</p>
-                  <p className="text-xs text-[var(--muted)] mt-1 flex items-center justify-center gap-1">
-                    <TrendingUp className="w-3 h-3" />
-                    Avg Brand Size
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold">{timeAgo(creator.stats.lastCollabAt)}</p>
-                  <p className="text-xs text-[var(--muted)] mt-1 flex items-center justify-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Last Collab
-                  </p>
-                </div>
+              {/* Stats Bar - Clean with horizontal dividers, no icons */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 pt-6 border-t border-[var(--border)]">
+                {stats.map((stat, index) => (
+                  <div
+                    key={stat.label}
+                    className={`text-center py-4 transition-all duration-500 ${
+                      statsRevealed
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-2"
+                    } ${index < stats.length - 1 ? "sm:border-r sm:border-[var(--border)]" : ""}`}
+                    style={{ transitionDelay: `${index * 75}ms` }}
+                  >
+                    <p className="text-4xl font-bold tracking-tight">{stat.value}</p>
+                    <p className="text-xs text-[var(--muted)] mt-1.5 tracking-wider font-medium">
+                      {stat.label}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
 
-          {/* Tabs */}
-          <div className="tab-nav mt-6 mb-4">
-            {(["overview", "collabs", "similar"] as TabType[]).map((tab) => (
+          {/* Tabs - Icon style like MeetSponsors */}
+          <div className="flex items-center gap-1 mt-8 mb-6 border-b border-[var(--border)]">
+            {([
+              { key: "overview" as TabType, label: "Overview", icon: LayoutGrid },
+              { key: "collabs" as TabType, label: "Collabs", icon: Handshake, count: creator.stats.uniqueBrands },
+              { key: "similar" as TabType, label: "Similar Creators", icon: Users },
+            ]).map((tab) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`tab-nav-item ${activeTab === tab ? "active" : ""}`}
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  activeTab === tab.key
+                    ? "text-[var(--accent)]"
+                    : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                }`}
               >
-                {tab === "overview" && "Overview"}
-                {tab === "collabs" && `Collabs (${creator.stats.uniqueBrands})`}
-                {tab === "similar" && "Similar Creators"}
+                <tab.icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+                {tab.count !== undefined && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                    activeTab === tab.key
+                      ? "bg-[var(--accent)]/10"
+                      : "bg-[var(--surface-elevated)]"
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+                {activeTab === tab.key && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)] rounded-full" />
+                )}
               </button>
             ))}
           </div>
 
-          {/* Tab Content */}
+          {/* Tab Content - with smooth transitions */}
           <section className="animate-fade-in">
             {activeTab === "overview" && (
               <div className="space-y-4">
                 {/* Bio */}
                 {creator.bio && (
-                  <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5">
-                    <h3 className="text-sm font-semibold text-[var(--muted)] mb-2">About</h3>
-                    <p className="text-[var(--foreground)] whitespace-pre-line">{creator.bio}</p>
+                  <div className="bg-[var(--surface)] rounded-xl shadow-md hover:shadow-lg transition-shadow p-5">
+                    <h3 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-3">About</h3>
+                    <p className="text-[var(--foreground)] whitespace-pre-line leading-relaxed">{creator.bio}</p>
                   </div>
                 )}
 
                 {/* Quick Brand List */}
                 {creator.brandsWorkedWith.length > 0 && (
-                  <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5">
+                  <div className="bg-[var(--surface)] rounded-xl shadow-md hover:shadow-lg transition-shadow p-5">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-semibold text-[var(--muted)]">Brands Worked With</h3>
+                      <h3 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Brands Worked With</h3>
                       <button
                         onClick={() => setActiveTab("collabs")}
-                        className="text-xs text-[var(--accent)] hover:text-[var(--accent-dark)] flex items-center gap-1"
+                        className="text-xs text-[var(--accent)] hover:text-[var(--accent-dark)] flex items-center gap-1 font-medium"
                       >
                         View all
                         <ChevronRight className="w-3 h-3" />
@@ -361,7 +356,7 @@ export default function CreatorDetailPage() {
                         <Link
                           key={brand.brandId}
                           href={`/brand/${brand.brandUsername}`}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-elevated)] hover:bg-[var(--accent)]/10 transition-colors group"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-elevated)] hover:shadow-md hover:-translate-y-0.5 transition-all group"
                         >
                           <div className="w-8 h-8 rounded-lg bg-[var(--surface)] flex items-center justify-center overflow-hidden">
                             {brand.brandLogo ? (
@@ -402,7 +397,7 @@ export default function CreatorDetailPage() {
                     <Link
                       key={brand.brandId}
                       href={`/brand/${brand.brandUsername}`}
-                      className="flex items-center gap-4 p-4 bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:border-[var(--accent)] transition-all animate-fade-up group"
+                      className="flex items-center gap-4 p-4 bg-[var(--surface)] rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all animate-fade-up group"
                       style={{ animationDelay: `${index * 50}ms`, animationFillMode: "forwards" }}
                     >
                       {/* Brand Logo */}
@@ -463,7 +458,7 @@ export default function CreatorDetailPage() {
                     </Link>
                   ))
                 ) : (
-                  <div className="text-center py-12 bg-[var(--surface)] rounded-xl border border-[var(--border)]">
+                  <div className="text-center py-12 bg-[var(--surface)] rounded-xl shadow-md">
                     <Building2 className="w-10 h-10 text-[var(--muted)] mx-auto mb-3" />
                     <p className="text-[var(--muted)]">No brand collaborations detected yet</p>
                   </div>
@@ -478,7 +473,7 @@ export default function CreatorDetailPage() {
                     <Link
                       key={similar.id}
                       href={`/creator/${similar.instagramUsername}`}
-                      className="p-4 bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:border-[var(--accent)] transition-all group"
+                      className="p-4 bg-[var(--surface)] rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all group"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-[var(--surface-elevated)] flex items-center justify-center shrink-0 overflow-hidden">
@@ -519,7 +514,7 @@ export default function CreatorDetailPage() {
                     </Link>
                   ))
                 ) : (
-                  <div className="col-span-full text-center py-12 bg-[var(--surface)] rounded-xl border border-[var(--border)]">
+                  <div className="col-span-full text-center py-12 bg-[var(--surface)] rounded-xl shadow-md">
                     <Sparkles className="w-10 h-10 text-[var(--muted)] mx-auto mb-3" />
                     <p className="text-[var(--muted)]">No similar creators found</p>
                   </div>
@@ -531,7 +526,7 @@ export default function CreatorDetailPage() {
       ) : (
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
-            <Users className="w-12 h-12 text-[var(--muted)] mx-auto mb-4" />
+            <Building2 className="w-12 h-12 text-[var(--muted)] mx-auto mb-4" />
             <h2 className="text-xl font-bold mb-2">Creator not found</h2>
             <p className="text-[var(--muted)] mb-4">
               This creator doesn&apos;t exist or hasn&apos;t been discovered yet.
