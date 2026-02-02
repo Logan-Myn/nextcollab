@@ -46,10 +46,16 @@ export default function BrandDiscoveryPage() {
     niche: searchParams.get("niche") || "",
     minFollowers: "",
     maxFollowers: "",
-    activityLevel: searchParams.get("activity") || "",
+    activityLevel: searchParams.get("active") === "true" ? "veryActive" : (searchParams.get("activity") || ""),
     sort: (searchParams.get("sort") as SortType) || "matchScore",
     page: 1,
+    verified: searchParams.get("verified") === "true",
   });
+
+  // Smart filter states
+  const [verifiedOnly, setVerifiedOnly] = useState(searchParams.get("verified") === "true");
+  const [activeOnly, setActiveOnly] = useState(searchParams.get("active") === "true");
+  const [myNicheOnly, setMyNicheOnly] = useState(searchParams.get("myNiche") === "true");
 
   useEffect(() => {
     const range = searchParams.get("followers") || "";
@@ -126,10 +132,13 @@ export default function BrandDiscoveryPage() {
       params.set("followers", `${filters.minFollowers}-${filters.maxFollowers}`);
     }
     if (filters.sort !== "matchScore") params.set("sort", filters.sort);
+    if (verifiedOnly) params.set("verified", "true");
+    if (activeOnly) params.set("active", "true");
+    if (myNicheOnly) params.set("myNiche", "true");
 
     const newUrl = params.toString() ? `?${params.toString()}` : "/brand";
     router.replace(newUrl, { scroll: false });
-  }, [filters, router]);
+  }, [filters, verifiedOnly, activeOnly, myNicheOnly, router]);
 
   const handleTabChange = (tab: TabType) => {
     setFilters((f) => ({ ...f, tab, page: 1 }));
@@ -151,6 +160,26 @@ export default function BrandDiscoveryPage() {
 
   const handleSortChange = (sort: SortType) => {
     setFilters((f) => ({ ...f, sort, page: 1 }));
+  };
+
+  const handleVerifiedOnlyChange = (value: boolean) => {
+    setVerifiedOnly(value);
+    setFilters((f) => ({ ...f, verified: value, page: 1 }));
+  };
+
+  const handleActiveOnlyChange = (value: boolean) => {
+    setActiveOnly(value);
+    // "Active this month" maps to activity level "veryActive"
+    setFilters((f) => ({ ...f, activityLevel: value ? "veryActive" : "", page: 1 }));
+  };
+
+  const handleMyNicheOnlyChange = (value: boolean) => {
+    setMyNicheOnly(value);
+    if (value && profile?.niche) {
+      setFilters((f) => ({ ...f, niche: profile.niche || "", page: 1 }));
+    } else {
+      setFilters((f) => ({ ...f, niche: "", page: 1 }));
+    }
   };
 
   const topMatches = brands.filter((b) => (b.matchScore || 0) >= 70).slice(0, 6);
@@ -246,6 +275,13 @@ export default function BrandDiscoveryPage() {
           onViewModeChange={setViewMode}
           matchCount={filters.tab === "forYou" ? brands.length : undefined}
           hasProfile={hasProfile}
+          verifiedOnly={verifiedOnly}
+          onVerifiedOnlyChange={handleVerifiedOnlyChange}
+          activeOnly={activeOnly}
+          onActiveOnlyChange={handleActiveOnlyChange}
+          myNicheOnly={myNicheOnly}
+          onMyNicheOnlyChange={handleMyNicheOnlyChange}
+          userNiche={profile?.niche}
         />
       </div>
 
@@ -473,6 +509,9 @@ export default function BrandDiscoveryPage() {
             <button
               onClick={() => {
                 setSearchQuery("");
+                setVerifiedOnly(false);
+                setActiveOnly(false);
+                setMyNicheOnly(false);
                 setFilters({
                   tab: "all",
                   search: "",
@@ -483,6 +522,7 @@ export default function BrandDiscoveryPage() {
                   activityLevel: "",
                   sort: "matchScore",
                   page: 1,
+                  verified: false,
                 });
               }}
               className="btn btn-primary"

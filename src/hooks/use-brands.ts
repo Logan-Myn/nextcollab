@@ -17,6 +17,7 @@ export interface BrandFilters {
   activityLevel: string;
   sort: SortType;
   page: number;
+  verified?: boolean;
 }
 
 export interface UseBrandsResult {
@@ -119,6 +120,7 @@ export function useBrands(
           if (filters.minFollowers) params.set("minFollowers", filters.minFollowers);
           if (filters.maxFollowers) params.set("maxFollowers", filters.maxFollowers);
           if (filters.activityLevel) params.set("activityLevel", filters.activityLevel);
+          if (filters.verified) params.set("verified", "true");
 
           const sortMap: Record<SortType, string> = {
             matchScore: "partnershipCount",
@@ -163,6 +165,7 @@ export function useBrands(
     filters.maxFollowers,
     filters.activityLevel,
     filters.sort,
+    filters.verified,
     userId,
   ]);
 
