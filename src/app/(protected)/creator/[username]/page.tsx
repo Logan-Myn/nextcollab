@@ -17,9 +17,10 @@ import {
   Loader2,
   Instagram,
   Sparkles,
-  BarChart3,
   ChevronRight,
   Building2,
+  Clock,
+  TrendingUp,
 } from "lucide-react";
 
 interface BrandWorkedWith {
@@ -63,6 +64,7 @@ interface CreatorDetail {
     engagementRate: number;
     followerTier: string;
     lastCollabAt: string | null;
+    avgBrandFollowers: number;
   };
   brandsWorkedWith: BrandWorkedWith[];
   similarCreators: SimilarCreator[];
@@ -82,6 +84,21 @@ function formatNumber(n: number | null): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
   return String(n);
+}
+
+function timeAgo(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
+  return `${Math.floor(diffDays / 365)}y ago`;
 }
 
 function getTierLabel(tier: string): { label: string; class: string } {
@@ -181,16 +198,13 @@ export default function CreatorDetailPage() {
 
           {/* Hero Section */}
           <section className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] overflow-hidden animate-fade-up">
-            {/* Gradient Header */}
-            <div className="h-20 bg-gradient-to-r from-[var(--accent-secondary)]/20 via-[var(--accent)]/20 to-[var(--surface-elevated)]" />
-
             {/* Profile Content */}
-            <div className="px-8 pb-8 -mt-10">
-              {/* Avatar + Basic Info */}
+            <div className="p-6 sm:p-8">
+              {/* Top row: Avatar + Info + Actions */}
               <div className="flex flex-col sm:flex-row sm:items-start gap-5 mb-6">
                 {/* Avatar */}
                 <div className="relative shrink-0">
-                  <div className="w-20 h-20 rounded-xl bg-[var(--surface-elevated)] border-4 border-[var(--surface)] flex items-center justify-center overflow-hidden shadow-lg">
+                  <div className="w-20 h-20 rounded-2xl bg-[var(--surface-elevated)] border-2 border-[var(--border)] flex items-center justify-center overflow-hidden">
                     {creator.profilePicture ? (
                       <Image
                         src={creator.profilePicture}
@@ -214,95 +228,90 @@ export default function CreatorDetailPage() {
                 </div>
 
                 {/* Creator Info */}
-                <div className="flex-1 min-w-0 pt-2">
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <h1 className="text-2xl font-bold">
                       {creator.fullName || `@${creator.instagramUsername}`}
                     </h1>
-                    {tier && (
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full bg-[var(--surface-elevated)] ${tier.class}`}>
-                        {tier.label}
-                      </span>
-                    )}
                   </div>
                   <p className="text-[var(--muted)] mt-0.5">@{creator.instagramUsername}</p>
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <div className="flex items-center gap-2 mt-3 flex-wrap">
                     {creator.niche && (
                       <span className="badge badge-accent">{creator.niche}</span>
+                    )}
+                    {tier && (
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] ${tier.class}`}>
+                        {tier.label}
+                      </span>
                     )}
                     {creator.externalUrl && (
                       <a
                         href={creator.externalUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-sm text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
+                        className="flex items-center gap-1.5 text-sm text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
                       >
-                        <Globe className="w-3 h-3" />
+                        <Globe className="w-3.5 h-3.5" />
                         Website
+                        <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
                   </div>
                 </div>
 
-                {/* Stats Badge */}
-                <div className="shrink-0 flex flex-col items-center justify-center px-5 py-3 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] mt-2 sm:mt-0">
-                  <span className="text-[10px] uppercase tracking-wider text-[var(--muted)] mb-1">Brands</span>
-                  <span className="text-3xl font-bold text-[var(--accent)]">
-                    {creator.stats.uniqueBrands}
-                  </span>
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 shrink-0 mt-2 sm:mt-0">
+                  <button
+                    onClick={() =>
+                      window.open(`https://instagram.com/${creator.instagramUsername}`, "_blank")
+                    }
+                    className="icon-btn"
+                    style={{ width: "40px", height: "40px" }}
+                    title="View on Instagram"
+                  >
+                    <Instagram className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="icon-btn"
+                    style={{ width: "40px", height: "40px" }}
+                    title="Share profile"
+                  >
+                    <Share2 className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
 
-              {/* Stats Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                <div className="p-4 rounded-xl bg-[var(--surface-elevated)] text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-2">
-                    <Users className="w-4 h-4 text-[var(--accent-secondary)]" />
-                    <span className="text-xs text-[var(--muted)]">Followers</span>
-                  </div>
-                  <p className="text-xl font-bold">{formatNumber(creator.followers)}</p>
+              {/* Stats Bar - More meaningful stats for creators */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)]">
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{formatNumber(creator.followers)}</p>
+                  <p className="text-xs text-[var(--muted)] mt-1 flex items-center justify-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Followers
+                  </p>
                 </div>
-                <div className="p-4 rounded-xl bg-[var(--surface-elevated)] text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-2">
-                    <Zap className="w-4 h-4 text-[var(--success)]" />
-                    <span className="text-xs text-[var(--muted)]">Collabs</span>
-                  </div>
-                  <p className="text-xl font-bold">{creator.stats.totalCollabs}</p>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{creator.stats.uniqueBrands}</p>
+                  <p className="text-xs text-[var(--muted)] mt-1 flex items-center justify-center gap-1">
+                    <Building2 className="w-3 h-3" />
+                    Brands
+                  </p>
                 </div>
-                <div className="p-4 rounded-xl bg-[var(--surface-elevated)] text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-2">
-                    <Building2 className="w-4 h-4 text-[var(--accent)]" />
-                    <span className="text-xs text-[var(--muted)]">Brands</span>
-                  </div>
-                  <p className="text-xl font-bold">{creator.stats.uniqueBrands}</p>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{formatNumber(creator.stats.avgBrandFollowers)}</p>
+                  <p className="text-xs text-[var(--muted)] mt-1 flex items-center justify-center gap-1">
+                    <TrendingUp className="w-3 h-3" />
+                    Avg Brand Size
+                  </p>
                 </div>
-                <div className="p-4 rounded-xl bg-[var(--surface-elevated)] text-center">
-                  <div className="flex items-center justify-center gap-1.5 mb-2">
-                    <BarChart3 className="w-4 h-4 text-[var(--warning)]" />
-                    <span className="text-xs text-[var(--muted)]">Following</span>
-                  </div>
-                  <p className="text-xl font-bold">{formatNumber(creator.following)}</p>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{timeAgo(creator.stats.lastCollabAt)}</p>
+                  <p className="text-xs text-[var(--muted)] mt-1 flex items-center justify-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Last Collab
+                  </p>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() =>
-                    window.open(`https://instagram.com/${creator.instagramUsername}`, "_blank")
-                  }
-                  className="flex-1 btn btn-primary"
-                >
-                  <Instagram className="w-4 h-4" />
-                  View on Instagram
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="icon-btn"
-                  style={{ width: "40px", height: "40px" }}
-                >
-                  <Share2 className="w-5 h-5" />
-                </button>
               </div>
             </div>
           </section>

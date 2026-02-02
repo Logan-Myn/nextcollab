@@ -49,7 +49,7 @@ export async function GET(
     const followers = creatorData.followers || 0;
     const engagementRate = followers > 0 ? (Number(stats.avgEngagement) / followers) * 100 : 0;
 
-    // Get brands this creator has worked with
+    // Get brands this creator has worked with (with brand followers for avg calculation)
     const brandsWorkedWith = await db
       .select({
         brandId: partnership.brandId,
@@ -57,6 +57,7 @@ export async function GET(
         brandUsername: brand.instagramUsername,
         brandLogo: brand.profilePicture,
         brandCategory: brand.category,
+        brandFollowers: brand.followers,
         collabCount: count(partnership.id),
         lastCollabAt: sql<string>`MAX(${partnership.detectedAt})`,
         postTypes: sql<string[]>`ARRAY_AGG(DISTINCT ${partnership.postType})`,
@@ -64,9 +65,15 @@ export async function GET(
       .from(partnership)
       .innerJoin(brand, eq(partnership.brandId, brand.id))
       .where(eq(partnership.creatorUsername, creatorData.instagramUsername))
-      .groupBy(partnership.brandId, brand.name, brand.instagramUsername, brand.profilePicture, brand.category)
+      .groupBy(partnership.brandId, brand.name, brand.instagramUsername, brand.profilePicture, brand.category, brand.followers)
       .orderBy(sql`MAX(${partnership.detectedAt}) DESC`)
       .limit(20);
+
+    // Calculate average brand size
+    const brandFollowers = brandsWorkedWith.map(b => b.brandFollowers || 0).filter(f => f > 0);
+    const avgBrandFollowers = brandFollowers.length > 0
+      ? Math.round(brandFollowers.reduce((a, b) => a + b, 0) / brandFollowers.length)
+      : 0;
 
     // Get similar creators (same niche, similar follower range)
     const followerMin = Math.floor(followers * 0.5);
@@ -116,6 +123,7 @@ export async function GET(
           engagementRate: Math.round(engagementRate * 100) / 100,
           followerTier: getFollowerTier(followers),
           lastCollabAt: stats.lastCollabAt,
+          avgBrandFollowers,
         },
 
         // Brand collaborations
