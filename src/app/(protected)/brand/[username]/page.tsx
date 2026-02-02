@@ -23,6 +23,7 @@ import {
   Target,
   Building2,
 } from "lucide-react";
+import { ActivityChart } from "@/components/brand/ActivityChart";
 
 interface Collab {
   creatorUsername: string | null;
@@ -458,6 +459,9 @@ export default function BrandDetailPage() {
           <section className="animate-fade-in">
             {activeTab === "overview" && (
               <div className="space-y-4">
+                {/* Activity Chart */}
+                <ActivityChart brandId={brand.id} />
+
                 {/* Bio */}
                 {brand.bio && (
                   <div className="bg-[var(--surface)] rounded-xl shadow-md hover:shadow-lg transition-shadow p-5">
