@@ -16,9 +16,11 @@ export async function GET(request: NextRequest) {
     // Filters
     const search = searchParams.get("search");
     const category = searchParams.get("category");
+    const niche = searchParams.get("niche");
     const minFollowers = searchParams.get("minFollowers");
     const maxFollowers = searchParams.get("maxFollowers");
     const verified = searchParams.get("verified");
+    const activityLevel = searchParams.get("activityLevel");
     const sortBy = searchParams.get("sortBy") || "partnershipCount";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
@@ -39,6 +41,10 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(brand.category, category));
     }
 
+    if (niche) {
+      conditions.push(eq(brand.niche, niche));
+    }
+
     if (minFollowers) {
       conditions.push(gte(brand.followers, parseInt(minFollowers)));
     }
@@ -49,6 +55,18 @@ export async function GET(request: NextRequest) {
 
     if (verified === "true") {
       conditions.push(eq(brand.isVerifiedAccount, true));
+    }
+
+    // Activity level filter based on partnership count
+    if (activityLevel === "veryActive") {
+      conditions.push(gte(brand.partnershipCount, 5));
+    } else if (activityLevel === "active") {
+      conditions.push(gte(brand.partnershipCount, 1));
+      conditions.push(lte(brand.partnershipCount, 4));
+    } else if (activityLevel === "quiet") {
+      conditions.push(
+        or(eq(brand.partnershipCount, 0), sql`${brand.partnershipCount} IS NULL`)
+      );
     }
 
     // Execute query
@@ -101,6 +119,15 @@ export async function GET(request: NextRequest) {
       .map((c) => c.category)
       .filter(Boolean) as string[];
 
+    // Get unique niches for filters
+    const nichesResult = await db
+      .selectDistinct({ niche: brand.niche })
+      .from(brand)
+      .where(sql`${brand.niche} IS NOT NULL`);
+    const niches = nichesResult
+      .map((n) => n.niche)
+      .filter(Boolean) as string[];
+
     return NextResponse.json({
       data: brands,
       pagination: {
@@ -111,6 +138,7 @@ export async function GET(request: NextRequest) {
       },
       filters: {
         categories,
+        niches,
       },
     });
   } catch (error) {

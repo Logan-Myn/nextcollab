@@ -217,7 +217,7 @@ export default function DashboardPage() {
                 </h2>
               </div>
               <Link
-                href="/dashboard/discover"
+                href="/brand?tab=forYou"
                 className="flex items-center gap-1 text-[var(--accent)] hover:text-[var(--accent-dark)] transition-colors text-sm font-medium"
               >
                 View all
@@ -255,7 +255,7 @@ export default function DashboardPage() {
                   We&apos;re analyzing brands to find the best opportunities for
                   you. Check back soon!
                 </p>
-                <Link href="/dashboard/discover" className="btn btn-primary">
+                <Link href="/brand" className="btn btn-primary">
                   Browse All Brands
                 </Link>
               </div>
@@ -327,7 +327,7 @@ export default function DashboardPage() {
                   </h2>
                 </div>
                 <Link
-                  href="/dashboard/discover"
+                  href="/brand"
                   className="text-xs text-[var(--accent)] hover:text-[var(--accent-dark)] flex items-center gap-1 transition-colors"
                 >
                   Explore

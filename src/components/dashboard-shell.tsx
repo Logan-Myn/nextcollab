@@ -39,7 +39,7 @@ interface DashboardShellProps {
 
 const navItems = [
   { href: "/dashboard", icon: Sparkles, label: "For You" },
-  { href: "/dashboard/discover", icon: Search, label: "Discover" },
+  { href: "/brand", icon: Search, label: "Brands" },
   { href: "/dashboard/pipeline", icon: Kanban, label: "Pipeline" },
   { href: "/dashboard/saved", icon: Heart, label: "Saved" },
 ];
@@ -176,7 +176,7 @@ export function DashboardShell({
         <div className="flex items-center gap-3">
           {/* Quick Action Button */}
           <Link
-            href="/dashboard/discover"
+            href="/brand"
             className="flex items-center gap-2 px-4 h-9 bg-[var(--accent)] text-white rounded-lg text-sm font-medium hover:bg-[var(--accent-dark)] transition-all hover:shadow-[0_4px_12px_rgba(131,58,180,0.3)] active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" />
