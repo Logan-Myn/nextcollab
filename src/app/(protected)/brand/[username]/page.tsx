@@ -579,15 +579,10 @@ export default function BrandDetailPage() {
                               <Zap className="w-3 h-3" />
                               {collab.collabCount} {collab.collabCount === 1 ? 'collab' : 'collabs'}
                             </span>
-                            {collab.avgEngagement > 0 && (
-                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--success)]/10 text-[var(--success)] text-xs font-medium">
-                                <TrendingUp className="w-3 h-3" />
-                                {formatNumber(collab.avgEngagement)} avg engagement
-                              </span>
-                            )}
                             {collab.engagementRate > 0 && (
-                              <span className="text-xs text-[var(--muted)]">
-                                {collab.engagementRate.toFixed(1)}% rate
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--surface-elevated)] text-[var(--muted)] text-xs">
+                                <TrendingUp className="w-3 h-3" />
+                                {collab.engagementRate.toFixed(1)}% engagement
                               </span>
                             )}
                           </div>
@@ -605,17 +600,18 @@ export default function BrandDetailPage() {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex flex-col items-end gap-2 shrink-0">
-                          <p className="text-xs text-[var(--muted)] flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {timeAgo(collab.lastCollabAt)}
-                          </p>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {collab.lastCollabAt && (
+                            <span className="text-xs text-[var(--muted)]">
+                              {timeAgo(collab.lastCollabAt)}
+                            </span>
+                          )}
                           {collab.postUrls && collab.postUrls[0] && (
                             <a
                               href={collab.postUrls[0]}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-[var(--accent)] hover:text-[var(--accent-dark)] transition-colors"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--surface-elevated)] text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors"
                             >
                               <ExternalLink className="w-3 h-3" />
                               View Post

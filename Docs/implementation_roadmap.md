@@ -51,23 +51,23 @@
 | 5 | Onboarding Flow | ✅ Complete | 3-step flow: username → analyzing → results → save |
 | 6 | Creator Profile API | ✅ Complete | /api/instagram/profile, /save-profile, /me |
 | 7 | Brand Seeding Script | ⬜ Pending | Scrape 500+ brands via Xpoz |
-| 8 | Brand API | ⬜ Pending | Search, filter, detail endpoints |
+| 8 | Brand API | ✅ Complete | /api/brands (list), /api/brands/[id] (detail), /api/brands/matches |
 
 ### Week 3: Dashboard Core
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 9 | Dashboard Layout | ✅ Complete | Real profile data, stats, resync, creator card in sidebar |
-| 10 | Search Page | ⬜ Pending | Filters + results grid |
-| 11 | Brand Card Component | ⬜ Pending | Reusable card with match score |
-| 12 | Brand Detail Page | ⬜ Pending | Full info + partnerships |
+| 9 | Dashboard Layout | ✅ Complete | Dark mode design system, DashboardShell, 4-tab navigation |
+| 10 | Search Page | ⬜ Pending | `/dashboard/discover` - Filters + results grid |
+| 11 | Brand Card Component | ✅ Complete | BrandCard + BrandCardCompact with match score progress bar |
+| 12 | Brand Detail Page | ✅ Complete | `/brand/[username]` - Full info + partnerships + fit analysis |
 
 ### Week 4: Matching & Features
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 13 | Matching Algorithm | ⬜ Pending | Score 0-100 with reasons |
-| 14 | "For You" Feed | ⬜ Pending | `/dashboard/matches` |
+| 13 | Matching Algorithm | ✅ Complete | Niche + followers + activity + recency scoring (0-100) |
+| 14 | "For You" Feed | ✅ Complete | Dashboard shows matched brands, stats, pipeline preview |
 | 15 | Favorites Feature | ⬜ Pending | Save/unsave brands |
 | 16 | Alerts Setup | ⬜ Pending | Resend email integration |
 
@@ -141,29 +141,24 @@ matchScore = (
 Public:
 /                       Landing page
 /pricing                Pricing details
-/login                  Sign in
-/signup                 Create account
+/login                  Sign in ✅
+/signup                 Create account ✅
 
 Onboarding (auth required):
-/onboarding             Enter Instagram username
-/onboarding/analyzing   Loading state
-/onboarding/results     Profile + matches preview
+/onboarding             3-step flow (username → analyzing → results) ✅
 
 Dashboard (auth required):
-/dashboard              Main dashboard
-/dashboard/matches      "For You" feed
-/dashboard/search       Search brands
-/dashboard/favorites    Saved brands
-/dashboard/alerts       Notification settings
+/dashboard              For You - Stats + Matches + Pipeline ✅
+/dashboard/discover     Search brands with filters ⬜
+/dashboard/pipeline     CRM kanban board ⬜
+/dashboard/saved        Favorited brands ⬜
 
 Brand:
-/brand/[id]             Brand detail page
+/brand/[username]       Brand detail page ✅
 
 Settings:
-/settings               Account settings
-/settings/profile       Edit profile
-/settings/instagram     Connect Instagram
-/settings/billing       Stripe portal
+/settings               Account settings ⬜
+/settings/billing       Stripe portal ⬜
 ```
 
 ---
@@ -238,6 +233,59 @@ bun add lucide-react
 - `XPOZ_SERVICE_URL` - OVH service URL
 - `XPOZ_SERVICE_KEY` - API key for service auth
 
+### Task 8, 11, 13, 14: Brand API + Dashboard UI + Matching (2025-01-29)
+
+**Design System & Layout:**
+- `src/app/globals.css` - Dark mode design system (#0a0a0f bg, #8b5cf6 purple, #06b6d4 cyan)
+- `src/components/dashboard-shell.tsx` - Layout with sidebar (desktop) + bottom tabs (mobile)
+- `src/components/brand-card.tsx` - BrandCard + BrandCardCompact with match scores
+- `Docs/Dashboard_Design.md` - Design specification document
+
+**Brand API Endpoints:**
+- `src/app/api/brands/route.ts` - List brands with pagination, search, filters
+- `src/app/api/brands/[id]/route.ts` - Get single brand with partnerships
+- `src/app/api/brands/matches/route.ts` - AI-matched brands for creator
+
+**Matching Algorithm (in /api/brands/matches):**
+```javascript
+// Factors: niche alignment, follower fit, activity score, recency
+// Returns: score 0-100, matchReasons array, stats
+```
+
+**Dashboard Page Updates:**
+- Stats overview (followers, engagement, niche, matches count)
+- Brand matches grid with BrandCard components
+- Pipeline preview (Saved/Pitched/Talking/Won)
+- Trending brands section
+
+### Task 12: Brand Detail Page (2025-01-29)
+
+**URL Structure Decision:**
+- Changed from `/brand/[id]` (UUID) to `/brand/[username]` (Instagram username)
+- Cleaner, shareable URLs: `/brand/nike` instead of `/brand/a251cb1b-...`
+- Already had unique index on `instagram_username` in database
+
+**Files created:**
+- `src/app/api/brands/by-username/[username]/route.ts` - API endpoint for username lookup
+- `src/app/(protected)/brand/[username]/page.tsx` - Brand detail page component
+
+**Files updated:**
+- `src/components/brand-card.tsx` - Updated links to use username URLs
+
+**Page Features:**
+- Hero section with gradient header, brand avatar, verified badge
+- Stats bar: followers, collabs, unique creators, avg partner size
+- Action buttons: Pitch (disabled/coming soon), Save, Instagram, Share
+- Tabbed content: Overview, Partnerships, Fit Analysis
+- Match score calculation based on creator profile
+- Similar Brands section
+- Responsive design with dark theme
+
+**Design Approach:** Hybrid style combining:
+- Social profile familiar patterns (Instagram-like hero)
+- Magazine editorial clean typography
+- Data dashboard analytics sections
+
 ---
 
-*Last updated: 2025-01-28*
+*Last updated: 2025-01-29*
