@@ -108,6 +108,7 @@ export async function GET(
         profilePicture: creatorData.profilePicture,
         niche: creatorData.niche,
         externalUrl: creatorData.externalUrl,
+        updatedAt: creatorData.updatedAt,
 
         // Calculated stats
         stats: {

@@ -77,6 +77,7 @@ interface BrandDetail {
   preferredPostTypes: string[] | null;
   contentPreference: string | null;
   profilePicture: string | null;
+  updatedAt: string | null;
   stats: {
     totalCollabs: number;
     uniqueCreators: number;
@@ -414,6 +415,7 @@ export default function BrandDetailPage() {
 
           {/* Tabs - Icon style */}
           <div className="flex items-center gap-1 mt-8 mb-6 border-b border-[var(--border)]">
+            <div className="flex items-center gap-1 flex-1">
             {([
               { key: "overview" as TabType, label: "Overview", icon: LayoutGrid },
               { key: "collabs" as TabType, label: "Collabs", icon: Handshake, count: brand.stats.uniqueCreators },
@@ -444,6 +446,12 @@ export default function BrandDetailPage() {
                 )}
               </button>
             ))}
+            </div>
+            {brand.updatedAt && (
+              <span className="text-xs text-[var(--muted)] shrink-0">
+                Last update: {timeAgo(brand.updatedAt)}
+              </span>
+            )}
           </div>
 
           {/* Tab Content */}

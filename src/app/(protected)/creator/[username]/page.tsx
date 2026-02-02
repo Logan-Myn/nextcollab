@@ -67,6 +67,7 @@ interface CreatorDetail {
   };
   brandsWorkedWith: BrandWorkedWith[];
   similarCreators: SimilarCreator[];
+  updatedAt: string | null;
 }
 
 interface CreatorProfile {
@@ -294,6 +295,7 @@ export default function CreatorDetailPage() {
 
           {/* Tabs - Icon style like MeetSponsors */}
           <div className="flex items-center gap-1 mt-8 mb-6 border-b border-[var(--border)]">
+            <div className="flex items-center gap-1 flex-1">
             {([
               { key: "overview" as TabType, label: "Overview", icon: LayoutGrid },
               { key: "collabs" as TabType, label: "Collabs", icon: Handshake, count: creator.stats.uniqueBrands },
@@ -324,6 +326,12 @@ export default function CreatorDetailPage() {
                 )}
               </button>
             ))}
+            </div>
+            {creator.updatedAt && (
+              <span className="text-xs text-[var(--muted)] shrink-0">
+                Last update: {timeAgo(creator.updatedAt)}
+              </span>
+            )}
           </div>
 
           {/* Tab Content - with smooth transitions */}
