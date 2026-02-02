@@ -579,12 +579,6 @@ export default function BrandDetailPage() {
                               <Zap className="w-3 h-3" />
                               {collab.collabCount} {collab.collabCount === 1 ? 'collab' : 'collabs'}
                             </span>
-                            {collab.engagementRate > 0 && (
-                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--surface-elevated)] text-[var(--muted)] text-xs">
-                                <TrendingUp className="w-3 h-3" />
-                                {collab.engagementRate.toFixed(1)}% engagement
-                              </span>
-                            )}
                           </div>
 
                           {/* Post Types */}
