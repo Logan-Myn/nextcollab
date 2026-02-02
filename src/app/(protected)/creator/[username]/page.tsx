@@ -190,105 +190,92 @@ export default function CreatorDetailPage() {
             <span className="text-sm font-medium">Back</span>
           </button>
 
-          {/* Hero Section - Shadow-first, no heavy borders */}
+          {/* Compact Header - Editorial style */}
           <section className="bg-[var(--surface)] rounded-2xl shadow-lg overflow-hidden animate-fade-up">
-            <div className="p-6 sm:p-8">
-              {/* Top row: Avatar + Info + Actions */}
-              <div className="flex flex-col sm:flex-row sm:items-start gap-6 mb-8">
-                {/* Larger Avatar (104px) */}
-                <div className="relative shrink-0">
-                  <div className="w-26 h-26 rounded-2xl bg-[var(--surface-elevated)] flex items-center justify-center overflow-hidden shadow-md" style={{ width: '104px', height: '104px' }}>
+            <div className="p-5">
+              {/* Single row: Avatar + Info + Actions */}
+              <div className="flex items-center gap-4">
+                {/* Compact Avatar (56px) */}
+                <div className="shrink-0">
+                  <div className="rounded-full bg-[var(--surface-elevated)] flex items-center justify-center overflow-hidden shadow-sm w-14 h-14">
                     {creator.profilePicture ? (
                       <Image
                         src={creator.profilePicture}
                         alt={creator.fullName || creator.instagramUsername || "Creator"}
-                        width={104}
-                        height={104}
+                        width={56}
+                        height={56}
                         unoptimized
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-3xl font-bold text-[var(--accent)]">
+                      <span className="text-xl font-bold text-[var(--accent)]">
                         {(creator.instagramUsername || "?").charAt(0).toUpperCase()}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Creator Info */}
+                {/* Creator Info - Compact horizontal */}
                 <div className="flex-1 min-w-0">
-                  {/* Name with inline verified badge */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                  {/* Name row with verified badge */}
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold tracking-tight truncate">
                       {creator.fullName || `@${creator.instagramUsername}`}
                     </h1>
                     {creator.isVerified && (
-                      <CheckCircle2 className="w-5 h-5 text-[var(--accent-secondary)] shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-[var(--accent-secondary)] shrink-0" />
                     )}
                   </div>
-                  <p className="text-[var(--muted)] mt-1">@{creator.instagramUsername}</p>
 
-                  {/* Badges */}
-                  <div className="flex items-center gap-2 mt-4 flex-wrap">
+                  {/* Meta row: niche + handle + website */}
+                  <div className="flex items-center gap-2 mt-1 flex-wrap text-sm">
                     {creator.niche && (
-                      <span className="badge badge-accent">{creator.niche}</span>
+                      <span className="badge badge-accent text-xs py-0.5">{creator.niche}</span>
                     )}
+                    <span className="text-[var(--muted)]">@{creator.instagramUsername}</span>
                     {creator.externalUrl && (
-                      <a
-                        href={creator.externalUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-sm text-[var(--muted)] hover:text-[var(--accent)] transition-colors"
-                      >
-                        <Globe className="w-3.5 h-3.5" />
-                        Website
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                      <>
+                        <span className="text-[var(--border)]">·</span>
+                        <a
+                          href={creator.externalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[var(--accent)] hover:text-[var(--accent-dark)] flex items-center gap-1 transition-colors"
+                        >
+                          <Globe className="w-3 h-3" />
+                          <span>Website</span>
+                        </a>
+                      </>
                     )}
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 shrink-0 mt-2 sm:mt-0">
+                {/* Follower tier badge */}
+                <div className="shrink-0 px-3 py-1.5 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-sm font-medium">
+                  {creator.stats.followerTier}
+                </div>
+
+                {/* Action buttons - Inline */}
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() =>
                       window.open(`https://instagram.com/${creator.instagramUsername}`, "_blank")
                     }
                     className="icon-btn"
-                    style={{ width: "40px", height: "40px" }}
+                    style={{ width: "36px", height: "36px" }}
                     title="View on Instagram"
                   >
-                    <Instagram className="w-5 h-5" />
+                    <Instagram className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleShare}
                     className="icon-btn"
-                    style={{ width: "40px", height: "40px" }}
+                    style={{ width: "36px", height: "36px" }}
                     title="Share profile"
                   >
-                    <Share2 className="w-5 h-5" />
+                    <Share2 className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
-
-              {/* Stats Bar - Clean with horizontal dividers, no icons */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 pt-6 border-t border-[var(--border)]">
-                {stats.map((stat, index) => (
-                  <div
-                    key={stat.label}
-                    className={`text-center py-4 transition-all duration-500 ${
-                      statsRevealed
-                        ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-2"
-                    } ${index < stats.length - 1 ? "sm:border-r sm:border-[var(--border)]" : ""}`}
-                    style={{ transitionDelay: `${index * 75}ms` }}
-                  >
-                    <p className="text-4xl font-bold tracking-tight">{stat.value}</p>
-                    <p className="text-xs text-[var(--muted)] mt-1.5 tracking-wider font-medium">
-                      {stat.label}
-                    </p>
-                  </div>
-                ))}
               </div>
             </div>
           </section>
@@ -338,6 +325,26 @@ export default function CreatorDetailPage() {
           <section className="animate-fade-in">
             {activeTab === "overview" && (
               <div className="space-y-4">
+                {/* Stats Cards - Moved from header */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {stats.map((stat, index) => (
+                    <div
+                      key={stat.label}
+                      className={`bg-[var(--surface)] rounded-xl shadow-md p-4 text-center transition-all duration-500 hover:shadow-lg ${
+                        statsRevealed
+                          ? "opacity-100 translate-y-0"
+                          : "opacity-0 translate-y-2"
+                      }`}
+                      style={{ transitionDelay: `${index * 75}ms` }}
+                    >
+                      <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stat.value}</p>
+                      <p className="text-[10px] text-[var(--muted)] mt-1 tracking-wider font-medium uppercase">
+                        {stat.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
                 {/* Bio */}
                 {creator.bio && (
                   <div className="bg-[var(--surface)] rounded-xl shadow-md hover:shadow-lg transition-shadow p-5">

@@ -715,6 +715,81 @@ input:-webkit-autofill:focus {
   outline-offset: 2px;
 }
 
+/* -----------------------------------------------------------------------------
+   Rail Navigation (Desktop Icon Rail)
+   ----------------------------------------------------------------------------- */
+.rail-item {
+  position: relative;
+}
+
+.rail-tooltip {
+  pointer-events: none;
+  transform: translateX(-4px);
+}
+
+.rail-item:hover .rail-tooltip {
+  transform: translateX(0);
+}
+
+/* Rail active indicator slide animation */
+@keyframes rail-indicator-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scaleY(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scaleY(1);
+  }
+}
+
+.rail-item .animate-slide-in {
+  animation: rail-indicator-in 0.2s ease-out forwards;
+}
+
+/* Rail logo glow effect */
+.rail-logo:hover .w-10 {
+  box-shadow: 0 0 24px rgba(131, 58, 180, 0.5);
+}
+
+[data-theme="dark"] .rail-logo:hover .w-10 {
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.5);
+}
+
+/* -----------------------------------------------------------------------------
+   Top Bar Search
+   ----------------------------------------------------------------------------- */
+.top-bar-search {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.top-bar-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+/* -----------------------------------------------------------------------------
+   Profile Dropdown
+   ----------------------------------------------------------------------------- */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.profile-dropdown-menu {
+  animation: dropdown-in 0.15s ease-out forwards;
+  transform-origin: top right;
+}
+
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -284,132 +284,117 @@ export default function BrandDetailPage() {
             <span className="text-sm font-medium">Back</span>
           </button>
 
-          {/* Hero Section - Shadow-first, no gradient */}
+          {/* Compact Header - Editorial style */}
           <section className="bg-[var(--surface)] rounded-2xl shadow-lg overflow-hidden animate-fade-up">
-            <div className="p-6 sm:p-8">
-              {/* Top row: Avatar + Info + Match Score */}
-              <div className="flex flex-col sm:flex-row sm:items-start gap-6 mb-8">
-                {/* Larger Avatar (104px) */}
-                <div className="relative shrink-0">
-                  <div className="rounded-2xl bg-[var(--surface-elevated)] flex items-center justify-center overflow-hidden shadow-md" style={{ width: '104px', height: '104px' }}>
+            <div className="p-5">
+              {/* Single row: Avatar + Info + Actions */}
+              <div className="flex items-center gap-4">
+                {/* Compact Avatar (56px) */}
+                <div className="shrink-0">
+                  <div className="rounded-xl bg-[var(--surface-elevated)] flex items-center justify-center overflow-hidden shadow-sm w-14 h-14">
                     {brand.profilePicture ? (
                       <Image
                         src={brand.profilePicture}
                         alt={brand.name}
-                        width={104}
-                        height={104}
+                        width={56}
+                        height={56}
                         unoptimized
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-3xl font-bold text-[var(--accent)]">
+                      <span className="text-xl font-bold text-[var(--accent)]">
                         {brand.name.charAt(0).toUpperCase()}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Brand Info */}
+                {/* Brand Info - Compact horizontal */}
                 <div className="flex-1 min-w-0">
-                  {/* Name with inline verified badge */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{brand.name}</h1>
+                  {/* Name row with verified badge */}
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold tracking-tight truncate">{brand.name}</h1>
                     {brand.isVerifiedAccount && (
-                      <CheckCircle2 className="w-5 h-5 text-[var(--accent-secondary)] shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-[var(--accent-secondary)] shrink-0" />
                     )}
                   </div>
-                  <p className="text-[var(--muted)] mt-1">@{brand.instagramUsername}</p>
 
-                  {/* Badges */}
-                  <div className="flex items-center gap-2 mt-4 flex-wrap">
+                  {/* Meta row: categories + handle + website */}
+                  <div className="flex items-center gap-2 mt-1 flex-wrap text-sm">
                     {brand.category && (
-                      <span className="badge badge-accent">{brand.category}</span>
+                      <span className="badge badge-accent text-xs py-0.5">{brand.category}</span>
                     )}
-                    {brand.niche && brand.niche !== brand.category && (
-                      <span className="badge badge-muted">{brand.niche}</span>
-                    )}
-                    {brand.location && (
-                      <span className="flex items-center gap-1 text-sm text-[var(--muted)]">
-                        <Globe className="w-3.5 h-3.5" />
-                        {brand.location}
-                      </span>
+                    <span className="text-[var(--muted)]">@{brand.instagramUsername}</span>
+                    {brand.websiteUrl && (
+                      <>
+                        <span className="text-[var(--border)]">·</span>
+                        <a
+                          href={brand.websiteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[var(--accent)] hover:text-[var(--accent-dark)] flex items-center gap-1 transition-colors"
+                        >
+                          <Globe className="w-3 h-3" />
+                          <span className="truncate max-w-[120px]">
+                            {brand.websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "").split('/')[0]}
+                          </span>
+                        </a>
+                      </>
                     )}
                   </div>
                 </div>
 
-                {/* Match Score - Clean design */}
+                {/* Match Score - Compact pill */}
                 {matchScore !== null && (
-                  <div className="shrink-0 text-center mt-2 sm:mt-0">
-                    <span className="text-xs text-[var(--muted)] uppercase tracking-wider font-medium">Match</span>
-                    <p
-                      className={`text-4xl font-bold tracking-tight ${
-                        matchScore >= 85
-                          ? "text-[var(--success)]"
-                          : matchScore >= 70
-                            ? "text-[var(--accent)]"
-                            : "text-[var(--warning)]"
-                      }`}
-                    >
-                      {matchScore}%
-                    </p>
+                  <div className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-bold ${
+                    matchScore >= 85
+                      ? "bg-[var(--success)]/10 text-[var(--success)]"
+                      : matchScore >= 70
+                        ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                        : "bg-[var(--warning)]/10 text-[var(--warning)]"
+                  }`}>
+                    {matchScore}% match
                   </div>
                 )}
-              </div>
 
-              {/* Stats Bar - Clean with horizontal dividers */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 py-6 border-t border-b border-[var(--border)]">
-                {stats.map((stat, index) => (
-                  <div
-                    key={stat.label}
-                    className={`text-center py-2 transition-all duration-500 ${
-                      statsRevealed
-                        ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-2"
-                    } ${index < stats.length - 1 ? "sm:border-r sm:border-[var(--border)]" : ""}`}
-                    style={{ transitionDelay: `${index * 75}ms` }}
+                {/* Action buttons - Inline */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handleSave}
+                    className={`icon-btn ${saved ? "active" : ""}`}
+                    style={{ width: "36px", height: "36px" }}
+                    title={saved ? "Saved" : "Save"}
                   >
-                    <p className="text-4xl font-bold tracking-tight">{stat.value}</p>
-                    <p className="text-xs text-[var(--muted)] mt-1.5 tracking-wider font-medium">
-                      {stat.label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3 mt-6">
-                <button
-                  disabled
-                  className="flex-1 btn btn-primary opacity-50 cursor-not-allowed"
-                  title="Coming soon"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  Pitch This Brand
-                  <span className="text-[10px] ml-1 opacity-70">Soon</span>
-                </button>
-                <button
-                  onClick={handleSave}
-                  className={`icon-btn ${saved ? "active" : ""}`}
-                  style={{ width: "40px", height: "40px" }}
-                >
-                  <Heart className={`w-5 h-5 ${saved ? "fill-current" : ""}`} />
-                </button>
-                <button
-                  onClick={() =>
-                    window.open(`https://instagram.com/${brand.instagramUsername}`, "_blank")
-                  }
-                  className="icon-btn"
-                  style={{ width: "40px", height: "40px" }}
-                >
-                  <Instagram className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="icon-btn"
-                  style={{ width: "40px", height: "40px" }}
-                >
-                  <Share2 className="w-5 h-5" />
-                </button>
+                    <Heart className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
+                  </button>
+                  <button
+                    onClick={() =>
+                      window.open(`https://instagram.com/${brand.instagramUsername}`, "_blank")
+                    }
+                    className="icon-btn"
+                    style={{ width: "36px", height: "36px" }}
+                    title="View on Instagram"
+                  >
+                    <Instagram className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="icon-btn"
+                    style={{ width: "36px", height: "36px" }}
+                    title="Share"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    disabled
+                    className="btn btn-primary py-2 px-4 text-sm opacity-60 cursor-not-allowed"
+                    title="Coming soon"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span className="hidden sm:inline">Pitch</span>
+                    <span className="text-[9px] opacity-70">Soon</span>
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -459,6 +444,26 @@ export default function BrandDetailPage() {
           <section className="animate-fade-in">
             {activeTab === "overview" && (
               <div className="space-y-4">
+                {/* Stats Cards - Moved from header */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {stats.map((stat, index) => (
+                    <div
+                      key={stat.label}
+                      className={`bg-[var(--surface)] rounded-xl shadow-md p-4 text-center transition-all duration-500 hover:shadow-lg ${
+                        statsRevealed
+                          ? "opacity-100 translate-y-0"
+                          : "opacity-0 translate-y-2"
+                      }`}
+                      style={{ transitionDelay: `${index * 75}ms` }}
+                    >
+                      <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stat.value}</p>
+                      <p className="text-[10px] text-[var(--muted)] mt-1 tracking-wider font-medium uppercase">
+                        {stat.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
                 {/* Activity Chart */}
                 <ActivityChart brandId={brand.id} />
 
