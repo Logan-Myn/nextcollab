@@ -25,13 +25,17 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-interface Partnership {
-  id: string;
+interface Collab {
   creatorUsername: string | null;
   creatorFollowers: number | null;
   creatorNiche: string | null;
-  postType: string | null;
-  detectedAt: string | null;
+  collabCount: number;
+  totalEngagement: number;
+  avgEngagement: number;
+  engagementRate: number;
+  lastCollabAt: string | null;
+  postTypes: string[] | null;
+  postUrls: string[] | null;
   creator: {
     id: string | null;
     fullName: string | null;
@@ -78,8 +82,9 @@ interface BrandDetail {
     totalCollabs: number;
     uniqueCreators: number;
     avgCreatorFollowers: number;
+    lastCollabAt: string | null;
   };
-  recentPartnerships: Partnership[];
+  collabs: Collab[];
   similarBrands: SimilarBrand[];
 }
 
@@ -130,7 +135,7 @@ function timeAgo(dateStr: string | null): string {
   return `${Math.floor(diffDays / 365)} years ago`;
 }
 
-type TabType = "overview" | "partnerships" | "fit";
+type TabType = "overview" | "collabs" | "fit";
 
 export default function BrandDetailPage() {
   const params = useParams();
@@ -429,14 +434,14 @@ export default function BrandDetailPage() {
 
           {/* Tabs */}
           <div className="tab-nav mt-6 mb-4">
-            {(["overview", "partnerships", "fit"] as TabType[]).map((tab) => (
+            {(["overview", "collabs", "fit"] as TabType[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`tab-nav-item ${activeTab === tab ? "active" : ""}`}
               >
                 {tab === "overview" && "Overview"}
-                {tab === "partnerships" && `Partnerships (${brand.recentPartnerships.length})`}
+                {tab === "collabs" && `Collabs (${brand.stats.uniqueCreators})`}
                 {tab === "fit" && "Fit Analysis"}
               </button>
             ))}
@@ -522,63 +527,108 @@ export default function BrandDetailPage() {
               </div>
             )}
 
-            {activeTab === "partnerships" && (
+            {activeTab === "collabs" && (
               <div className="space-y-3">
-                {brand.recentPartnerships.length > 0 ? (
-                  brand.recentPartnerships.map((p, index) => (
+                {brand.collabs && brand.collabs.length > 0 ? (
+                  brand.collabs.map((collab, index) => (
                     <div
-                      key={p.id}
-                      className="flex items-center gap-4 p-4 bg-[var(--surface)] rounded-xl border border-[var(--border)] animate-fade-up"
+                      key={collab.creatorUsername || index}
+                      className="p-4 bg-[var(--surface)] rounded-xl border border-[var(--border)] animate-fade-up"
                       style={{ animationDelay: `${index * 50}ms`, animationFillMode: "forwards" }}
                     >
-                      {/* Creator Avatar */}
-                      <div className="w-12 h-12 rounded-full bg-[var(--surface-elevated)] flex items-center justify-center shrink-0">
-                        {p.creator?.profilePicture ? (
-                          <Image
-                            src={p.creator.profilePicture}
-                            alt={p.creatorUsername || "Creator"}
-                            width={48}
-                            height={48}
-                            unoptimized
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-lg font-bold text-[var(--accent)]">
-                            {(p.creatorUsername || "?").charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Creator Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium truncate">@{p.creatorUsername}</span>
-                          {p.creator?.isVerified && (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[var(--accent-secondary)]" />
+                      <div className="flex items-start gap-4">
+                        {/* Creator Avatar */}
+                        <div className="w-12 h-12 rounded-full bg-[var(--surface-elevated)] flex items-center justify-center shrink-0">
+                          {collab.creator?.profilePicture ? (
+                            <Image
+                              src={collab.creator.profilePicture}
+                              alt={collab.creatorUsername || "Creator"}
+                              width={48}
+                              height={48}
+                              unoptimized
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-lg font-bold text-[var(--accent)]">
+                              {(collab.creatorUsername || "?").charAt(0).toUpperCase()}
+                            </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-[var(--muted)]">
-                          <span>{formatNumber(p.creatorFollowers)} followers</span>
-                          {p.creatorNiche && <span className="capitalize">{p.creatorNiche}</span>}
-                        </div>
-                      </div>
 
-                      {/* Post Type & Date */}
-                      <div className="text-right shrink-0">
-                        {p.postType && (
-                          <span className="badge badge-muted capitalize">{p.postType}</span>
-                        )}
-                        <p className="text-xs text-[var(--muted)] mt-1 flex items-center justify-end gap-1">
-                          <Clock className="w-3 h-3" />
-                          {timeAgo(p.detectedAt)}
-                        </p>
+                        {/* Creator Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium truncate">@{collab.creatorUsername}</span>
+                            {collab.creator?.isVerified && (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--accent-secondary)]" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-sm text-[var(--muted)] mt-0.5">
+                            <span>{formatNumber(collab.creatorFollowers)} followers</span>
+                            {collab.creatorNiche && (
+                              <>
+                                <span className="text-[var(--border)]">·</span>
+                                <span className="capitalize">{collab.creatorNiche}</span>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Collab Stats Row */}
+                          <div className="flex flex-wrap items-center gap-3 mt-2">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--accent)]/10 text-[var(--accent)] text-xs font-medium">
+                              <Zap className="w-3 h-3" />
+                              {collab.collabCount} {collab.collabCount === 1 ? 'collab' : 'collabs'}
+                            </span>
+                            {collab.avgEngagement > 0 && (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--success)]/10 text-[var(--success)] text-xs font-medium">
+                                <TrendingUp className="w-3 h-3" />
+                                {formatNumber(collab.avgEngagement)} avg engagement
+                              </span>
+                            )}
+                            {collab.engagementRate > 0 && (
+                              <span className="text-xs text-[var(--muted)]">
+                                {collab.engagementRate.toFixed(1)}% rate
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Post Types */}
+                          {collab.postTypes && collab.postTypes.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {[...new Set(collab.postTypes.filter(Boolean))].map((type) => (
+                                <span key={type} className="badge badge-muted capitalize text-xs">
+                                  {type}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <p className="text-xs text-[var(--muted)] flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {timeAgo(collab.lastCollabAt)}
+                          </p>
+                          {collab.postUrls && collab.postUrls[0] && (
+                            <a
+                              href={collab.postUrls[0]}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-[var(--accent)] hover:text-[var(--accent-dark)] transition-colors"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              View Post
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="text-center py-12 bg-[var(--surface)] rounded-xl border border-[var(--border)]">
                     <Users className="w-10 h-10 text-[var(--muted)] mx-auto mb-3" />
-                    <p className="text-[var(--muted)]">No partnerships detected yet</p>
+                    <p className="text-[var(--muted)]">No collabs detected yet</p>
                   </div>
                 )}
               </div>
