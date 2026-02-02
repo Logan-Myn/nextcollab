@@ -537,8 +537,11 @@ export default function BrandDetailPage() {
                       style={{ animationDelay: `${index * 50}ms`, animationFillMode: "forwards" }}
                     >
                       <div className="flex items-start gap-4">
-                        {/* Creator Avatar */}
-                        <div className="w-12 h-12 rounded-full bg-[var(--surface-elevated)] flex items-center justify-center shrink-0">
+                        {/* Creator Avatar - Clickable */}
+                        <Link
+                          href={`/creator/${collab.creatorUsername}`}
+                          className="w-12 h-12 rounded-full bg-[var(--surface-elevated)] flex items-center justify-center shrink-0 hover:ring-2 hover:ring-[var(--accent)] transition-all"
+                        >
                           {collab.creator?.profilePicture ? (
                             <Image
                               src={collab.creator.profilePicture}
@@ -553,12 +556,17 @@ export default function BrandDetailPage() {
                               {(collab.creatorUsername || "?").charAt(0).toUpperCase()}
                             </span>
                           )}
-                        </div>
+                        </Link>
 
                         {/* Creator Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium truncate">@{collab.creatorUsername}</span>
+                            <Link
+                              href={`/creator/${collab.creatorUsername}`}
+                              className="font-medium truncate hover:text-[var(--accent)] transition-colors"
+                            >
+                              @{collab.creatorUsername}
+                            </Link>
                             {collab.creator?.isVerified && (
                               <CheckCircle2 className="w-3.5 h-3.5 text-[var(--accent-secondary)]" />
                             )}
