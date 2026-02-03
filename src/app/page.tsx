@@ -1,12 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { NumberTicker } from "@/components/ui/number-ticker";
+import { ShimmerButton } from "@/components/ui/shimmer-button";
+import { MagicCard } from "@/components/ui/magic-card";
+import { BlurFade } from "@/components/ui/blur-fade";
+import { ShineBorder } from "@/components/ui/shine-border";
+import { Marquee } from "@/components/ui/marquee";
 
 const stats = [
-  { value: "10K+", label: "Active Creators" },
-  { value: "2.5K", label: "Brand Partners" },
-  { value: "€12M", label: "Deals Facilitated" },
-  { value: "94%", label: "Match Success" },
+  { value: 10000, suffix: "+", label: "Active Creators" },
+  { value: 2500, suffix: "", label: "Brand Partners" },
+  { value: 12, prefix: "€", suffix: "M", label: "Deals Facilitated" },
+  { value: 94, suffix: "%", label: "Match Success" },
 ];
 
 const features = [
@@ -208,15 +215,12 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link href="/login" className="btn btn-secondary text-sm py-2 px-4">
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="btn btn-primary text-sm py-2 px-4 hidden sm:inline-flex"
-            >
-              Get Started
-            </Link>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/login">Log in</Link>
+            </Button>
+            <Button size="sm" className="hidden sm:inline-flex" asChild>
+              <Link href="/signup">Get Started</Link>
+            </Button>
           </div>
         </div>
       </nav>
@@ -255,10 +259,16 @@ export default function LandingPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-12 animate-fade-up opacity-0 delay-300">
-                <Link href="/signup?type=creator" className="btn btn-primary">
+                <ShimmerButton
+                  className="h-12 px-6 text-base font-medium"
+                  background="var(--accent)"
+                  shimmerColor="rgba(255,255,255,0.3)"
+                  borderRadius="12px"
+                  onClick={() => window.location.href = "/signup?type=creator"}
+                >
                   I&apos;m a Creator
                   <svg
-                    className="w-4 h-4"
+                    className="w-4 h-4 ml-2"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -270,10 +280,10 @@ export default function LandingPage() {
                       d="M17 8l4 4m0 0l-4 4m4-4H3"
                     />
                   </svg>
-                </Link>
-                <Link href="/signup?type=brand" className="btn btn-secondary">
-                  I&apos;m a Brand
-                </Link>
+                </ShimmerButton>
+                <Button variant="outline" size="lg" asChild>
+                  <Link href="/signup?type=brand">I&apos;m a Brand</Link>
+                </Button>
               </div>
 
               {/* Stats */}
@@ -284,7 +294,9 @@ export default function LandingPage() {
                       className="text-2xl md:text-3xl font-bold text-[var(--foreground)]"
                       style={{ fontFamily: "var(--font-display)" }}
                     >
-                      {stat.value}
+                      {stat.prefix}
+                      <NumberTicker value={stat.value} className="text-[var(--foreground)]" />
+                      {stat.suffix}
                     </div>
                     <div className="text-sm text-[var(--muted)]">
                       {stat.label}
@@ -406,24 +418,24 @@ export default function LandingPage() {
       </section>
 
       {/* Logos Section */}
-      <section className="py-16 border-y border-[var(--border)] bg-[var(--surface)]">
+      <section className="py-16 border-y border-[var(--border)] bg-[var(--surface)] overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <p className="text-center text-sm text-[var(--muted)] mb-8">
             Trusted by leading brands and agencies
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6 opacity-40">
-            {["Sephora", "Zalando", "Glossier", "Gymshark", "ASOS", "H&M"].map(
+          <Marquee pauseOnHover className="[--duration:30s] opacity-40">
+            {["Sephora", "Zalando", "Glossier", "Gymshark", "ASOS", "H&M", "Nike", "Adidas"].map(
               (brand) => (
                 <span
                   key={brand}
-                  className="text-xl font-semibold tracking-tight"
+                  className="text-xl font-semibold tracking-tight mx-8"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
                   {brand}
                 </span>
               )
             )}
-          </div>
+          </Marquee>
         </div>
       </section>
 
@@ -446,22 +458,29 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="group p-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)] transition-all duration-300 card-hover"
-              >
-                <div className="w-12 h-12 rounded-xl bg-[var(--accent-light)] flex items-center justify-center text-[var(--accent)] mb-5 group-hover:bg-[var(--accent)] group-hover:text-white transition-colors">
-                  {feature.icon}
-                </div>
-                <h3
-                  className="text-xl font-semibold mb-2"
-                  style={{ fontFamily: "var(--font-display)" }}
+            {features.map((feature, index) => (
+              <BlurFade key={feature.title} delay={0.1 * index} inView>
+                <MagicCard
+                  className="rounded-2xl border border-[var(--border)]"
+                  gradientColor="var(--accent-light)"
+                  gradientFrom="var(--accent)"
+                  gradientTo="var(--accent-secondary)"
+                  gradientOpacity={0.15}
                 >
-                  {feature.title}
-                </h3>
-                <p className="text-[var(--muted)]">{feature.description}</p>
-              </div>
+                  <div className="group p-8">
+                    <div className="w-12 h-12 rounded-xl bg-[var(--accent-light)] flex items-center justify-center text-[var(--accent)] mb-5 group-hover:bg-[var(--accent)] group-hover:text-white transition-colors">
+                      {feature.icon}
+                    </div>
+                    <h3
+                      className="text-xl font-semibold mb-2"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      {feature.title}
+                    </h3>
+                    <p className="text-[var(--muted)]">{feature.description}</p>
+                  </div>
+                </MagicCard>
+              </BlurFade>
             ))}
           </div>
         </div>
@@ -540,38 +559,43 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial) => (
-              <div
-                key={testimonial.author}
-                className="p-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] card-hover"
-              >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className="w-5 h-5 text-[var(--accent)]"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <p className="text-lg mb-6">&ldquo;{testimonial.quote}&rdquo;</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-dark)] flex items-center justify-center text-white text-sm font-medium">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm">
-                      {testimonial.author}
+            {testimonials.map((testimonial, index) => (
+              <BlurFade key={testimonial.author} delay={0.1 * index} inView>
+                <MagicCard
+                  className="rounded-2xl border border-[var(--border)] h-full"
+                  gradientColor="var(--accent-light)"
+                  gradientOpacity={0.1}
+                >
+                  <div className="p-8">
+                    <div className="flex gap-1 mb-4">
+                      {[...Array(5)].map((_, i) => (
+                        <svg
+                          key={i}
+                          className="w-5 h-5 text-[var(--accent)]"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      ))}
                     </div>
-                    <div className="text-xs text-[var(--muted)]">
-                      {testimonial.role} · {testimonial.followers}
+                    <p className="text-lg mb-6">&ldquo;{testimonial.quote}&rdquo;</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-dark)] flex items-center justify-center text-white text-sm font-medium">
+                        {testimonial.avatar}
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">
+                          {testimonial.author}
+                        </div>
+                        <div className="text-xs text-[var(--muted)]">
+                          {testimonial.role} · {testimonial.followers}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                </MagicCard>
+              </BlurFade>
             ))}
           </div>
         </div>
@@ -596,72 +620,79 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {pricingPlans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`p-8 rounded-2xl border ${
-                  plan.highlighted
-                    ? "border-[var(--accent)] bg-[var(--surface)] shadow-xl relative"
-                    : "border-[var(--border)] bg-[var(--surface)]"
-                } card-hover`}
-              >
-                {plan.highlighted && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[var(--accent)] text-white text-xs font-medium">
-                    Most Popular
-                  </div>
-                )}
-                <div className="mb-6">
-                  <h3
-                    className="text-xl font-semibold mb-2"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    {plan.name}
-                  </h3>
-                  <p className="text-sm text-[var(--muted)]">
-                    {plan.description}
-                  </p>
-                </div>
-                <div className="mb-6">
-                  <span
-                    className="text-4xl font-bold"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    {plan.price}
-                  </span>
-                  <span className="text-[var(--muted)]">{plan.period}</span>
-                </div>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-center gap-3 text-sm"
-                    >
-                      <svg
-                        className="w-5 h-5 text-[var(--accent)]"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/signup"
-                  className={`btn w-full ${
-                    plan.highlighted ? "btn-primary" : "btn-secondary"
-                  }`}
+            {pricingPlans.map((plan, index) => (
+              <BlurFade key={plan.name} delay={0.1 * index} inView>
+                <div
+                  className={`relative p-8 rounded-2xl border ${
+                    plan.highlighted
+                      ? "border-[var(--accent)] bg-[var(--surface)] shadow-xl"
+                      : "border-[var(--border)] bg-[var(--surface)]"
+                  } hover:shadow-lg transition-shadow h-full flex flex-col`}
                 >
-                  {plan.cta}
-                </Link>
-              </div>
+                  {plan.highlighted && (
+                    <>
+                      <ShineBorder
+                        shineColor={["var(--accent)", "var(--accent-secondary)"]}
+                        borderWidth={2}
+                        duration={10}
+                      />
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-[var(--accent)] text-white text-xs font-medium z-10">
+                        Most Popular
+                      </div>
+                    </>
+                  )}
+                  <div className="mb-6">
+                    <h3
+                      className="text-xl font-semibold mb-2"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      {plan.name}
+                    </h3>
+                    <p className="text-sm text-[var(--muted)]">
+                      {plan.description}
+                    </p>
+                  </div>
+                  <div className="mb-6">
+                    <span
+                      className="text-4xl font-bold"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      {plan.price}
+                    </span>
+                    <span className="text-[var(--muted)]">{plan.period}</span>
+                  </div>
+                  <ul className="space-y-3 mb-8 flex-1">
+                    {plan.features.map((feature) => (
+                      <li
+                        key={feature}
+                        className="flex items-center gap-3 text-sm"
+                      >
+                        <svg
+                          className="w-5 h-5 text-[var(--accent)]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    variant={plan.highlighted ? "default" : "outline"}
+                    className="w-full"
+                    asChild
+                  >
+                    <Link href="/signup">{plan.cta}</Link>
+                  </Button>
+                </div>
+              </BlurFade>
             ))}
           </div>
         </div>
@@ -689,13 +720,16 @@ export default function LandingPage() {
             sponsorships that align with their brand.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/signup"
-              className="btn bg-[var(--background)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-white"
+            <ShimmerButton
+              className="h-12 px-6 text-base font-medium"
+              background="var(--background)"
+              shimmerColor="var(--accent)"
+              borderRadius="12px"
+              onClick={() => window.location.href = "/signup"}
             >
-              Start for Free
+              <span className="text-[var(--foreground)]">Start for Free</span>
               <svg
-                className="w-4 h-4"
+                className="w-4 h-4 ml-2 text-[var(--foreground)]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -707,13 +741,15 @@ export default function LandingPage() {
                   d="M17 8l4 4m0 0l-4 4m4-4H3"
                 />
               </svg>
-            </Link>
-            <Link
-              href="/demo"
-              className="btn border border-[var(--background)] border-opacity-30 text-[var(--background)] hover:bg-[var(--background)] hover:bg-opacity-10"
+            </ShimmerButton>
+            <Button
+              variant="ghost"
+              size="lg"
+              className="border border-[var(--background)]/30 text-[var(--background)] hover:bg-[var(--background)]/10"
+              asChild
             >
-              Watch Demo
-            </Link>
+              <Link href="/demo">Watch Demo</Link>
+            </Button>
           </div>
         </div>
       </section>

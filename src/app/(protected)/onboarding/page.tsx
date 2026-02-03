@@ -15,6 +15,9 @@ import {
   AlertCircle,
   ChevronRight,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NumberTicker } from "@/components/ui/number-ticker";
 
 interface InstagramProfile {
   username: string;
@@ -202,26 +205,27 @@ export default function OnboardingPage() {
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)] text-lg">
                       @
                     </span>
-                    <input
+                    <Input
                       type="text"
                       value={cleanUsername}
                       onChange={(e) =>
                         setUsername(e.target.value.replace(/^@/, ""))
                       }
                       placeholder="your_username"
-                      className="w-full pl-9 pr-4 py-4 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--foreground)] text-lg placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-all"
+                      className="h-14 pl-9 rounded-xl bg-[var(--surface-elevated)] text-lg"
                       autoFocus
                     />
                   </div>
 
-                  <button
+                  <Button
                     type="submit"
                     disabled={!cleanUsername.trim()}
-                    className="w-full btn btn-primary py-4 text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    size="lg"
+                    className="w-full h-14 text-base"
                   >
                     Find my matches
                     <ArrowRight className="w-5 h-5" />
-                  </button>
+                  </Button>
                 </form>
 
                 {/* Info */}
@@ -352,7 +356,7 @@ export default function OnboardingPage() {
                       className="text-xl font-bold text-[var(--foreground)]"
                       style={{ fontFamily: "var(--font-display)" }}
                     >
-                      {formatNumber(profile.followers)}
+                      <NumberTicker value={profile.followers} className="text-[var(--foreground)]" />
                     </div>
                     <div className="text-xs text-[var(--muted)] mt-1">
                       Followers
@@ -363,7 +367,7 @@ export default function OnboardingPage() {
                       className="text-xl font-bold text-[var(--foreground)]"
                       style={{ fontFamily: "var(--font-display)" }}
                     >
-                      {formatNumber(profile.following)}
+                      <NumberTicker value={profile.following} className="text-[var(--foreground)]" />
                     </div>
                     <div className="text-xs text-[var(--muted)] mt-1">
                       Following
@@ -374,7 +378,7 @@ export default function OnboardingPage() {
                       className="text-xl font-bold text-[var(--foreground)]"
                       style={{ fontFamily: "var(--font-display)" }}
                     >
-                      {formatNumber(profile.postsCount)}
+                      <NumberTicker value={profile.postsCount} className="text-[var(--foreground)]" />
                     </div>
                     <div className="text-xs text-[var(--muted)] mt-1">
                       Posts
@@ -458,10 +462,11 @@ export default function OnboardingPage() {
 
                 {/* Actions */}
                 <div className="space-y-3">
-                  <button
+                  <Button
                     onClick={handleSaveAndContinue}
                     disabled={isSaving}
-                    className="w-full btn btn-primary py-4 text-base disabled:opacity-50"
+                    size="lg"
+                    className="w-full h-14 text-base"
                   >
                     {isSaving ? (
                       <>
@@ -474,17 +479,18 @@ export default function OnboardingPage() {
                         <ChevronRight className="w-5 h-5" />
                       </>
                     )}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       setStep("username");
                       setProfile(null);
                       setError(null);
                     }}
-                    className="w-full btn btn-secondary py-3 text-sm"
+                    className="w-full h-11 text-sm"
                   >
                     Try a different username
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

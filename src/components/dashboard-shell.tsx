@@ -18,8 +18,17 @@ import {
   ChevronDown,
   Plus,
 } from "lucide-react";
-import { useState, ReactNode, useRef, useEffect } from "react";
+import { useState, ReactNode } from "react";
 import { ThemeToggle } from "./theme-toggle";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface CreatorProfile {
   id: string;
@@ -60,19 +69,6 @@ export function DashboardShell({
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
-
-  // Close profile menu when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
-        setProfileMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const handleResync = async () => {
     if (!onResync) return;
@@ -184,42 +180,39 @@ export function DashboardShell({
           </Link>
 
           {/* Profile Dropdown */}
-          <div className="relative" ref={profileMenuRef}>
-            <button
-              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-              className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-[var(--surface-elevated)] transition-all"
-            >
-              {profile?.profilePicture ? (
-                <Image
-                  src={profile.profilePicture}
-                  alt={profile.instagramUsername || "Profile"}
-                  width={32}
-                  height={32}
-                  unoptimized
-                  className="w-8 h-8 rounded-full object-cover ring-2 ring-[var(--border)]"
-                />
-              ) : (
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-[var(--border)]"
-                  style={{ background: "var(--instagram-gradient)" }}
-                >
-                  {profile?.instagramUsername?.charAt(0).toUpperCase() || "?"}
-                </div>
-              )}
-              {profile?.instagramUsername && (
-                <span className="text-sm font-medium max-w-[120px] truncate">
-                  @{profile.instagramUsername}
-                </span>
-              )}
-              <ChevronDown className={`w-4 h-4 text-[var(--muted)] transition-transform duration-200 ${profileMenuOpen ? "rotate-180" : ""}`} />
-            </button>
-
-            {/* Dropdown Menu */}
-            {profileMenuOpen && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-lg overflow-hidden animate-fade-in z-50">
-                {/* Profile Header */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2.5 px-2 py-1.5">
+                {profile?.profilePicture ? (
+                  <Image
+                    src={profile.profilePicture}
+                    alt={profile.instagramUsername || "Profile"}
+                    width={32}
+                    height={32}
+                    unoptimized
+                    className="w-8 h-8 rounded-full object-cover ring-2 ring-[var(--border)]"
+                  />
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-[var(--border)]"
+                    style={{ background: "var(--instagram-gradient)" }}
+                  >
+                    {profile?.instagramUsername?.charAt(0).toUpperCase() || "?"}
+                  </div>
+                )}
                 {profile?.instagramUsername && (
-                  <div className="p-4 border-b border-[var(--border)] bg-[var(--surface-elevated)]">
+                  <span className="text-sm font-medium max-w-[120px] truncate">
+                    @{profile.instagramUsername}
+                  </span>
+                )}
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              {/* Profile Header */}
+              {profile?.instagramUsername && (
+                <>
+                  <DropdownMenuLabel className="p-4">
                     <div className="flex items-center gap-3">
                       {profile.profilePicture ? (
                         <Image
@@ -242,15 +235,16 @@ export function DashboardShell({
                         <p className="text-sm font-semibold truncate">
                           @{profile.instagramUsername}
                         </p>
-                        <p className="text-xs text-[var(--muted)]">
+                        <p className="text-xs text-muted-foreground">
                           {formatNumber(profile.followers || 0)} followers
                         </p>
                       </div>
                       {onResync && (
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={handleResync}
                           disabled={isSyncing}
-                          className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-light)] transition-all disabled:opacity-50"
                           title="Resync profile"
                         >
                           {isSyncing ? (
@@ -258,41 +252,36 @@ export function DashboardShell({
                           ) : (
                             <RefreshCw className="w-4 h-4" />
                           )}
-                        </button>
+                        </Button>
                       )}
                     </div>
-                  </div>
-                )}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                </>
+              )}
 
-                {/* Theme Toggle */}
-                <div className="p-3 border-b border-[var(--border)]">
-                  <p className="text-[10px] font-medium tracking-wider uppercase text-[var(--muted)] mb-2 px-1">
-                    Theme
-                  </p>
-                  <ThemeToggle variant="compact" />
-                </div>
-
-                {/* Menu Items */}
-                <div className="p-2">
-                  <Link
-                    href="/settings"
-                    onClick={() => setProfileMenuOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[var(--muted)] hover:bg-[var(--surface-elevated)] hover:text-[var(--foreground)] transition-all"
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span className="text-sm font-medium">Settings</span>
-                  </Link>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[var(--muted)] hover:bg-[var(--error-light)] hover:text-[var(--error)] transition-all"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span className="text-sm font-medium">Sign out</span>
-                  </button>
-                </div>
+              {/* Theme Toggle */}
+              <div className="p-3">
+                <p className="text-[10px] font-medium tracking-wider uppercase text-muted-foreground mb-2 px-1">
+                  Theme
+                </p>
+                <ThemeToggle variant="compact" />
               </div>
-            )}
-          </div>
+              <DropdownMenuSeparator />
+
+              {/* Menu Items */}
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="cursor-pointer">
+                  <Settings className="w-4 h-4" />
+                  <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onClick={handleSignOut} className="cursor-pointer">
+                <LogOut className="w-4 h-4" />
+                <span>Sign out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 

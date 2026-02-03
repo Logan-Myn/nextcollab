@@ -7,7 +7,6 @@ import Image from "next/image";
 import { useSession } from "@/lib/auth-client";
 import { DashboardShell } from "@/components/dashboard-shell";
 import {
-  ArrowLeft,
   ExternalLink,
   Heart,
   MessageSquare,
@@ -24,6 +23,11 @@ import {
   Building2,
 } from "lucide-react";
 import { ActivityChart } from "@/components/brand/ActivityChart";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { NumberTicker } from "@/components/ui/number-ticker";
+import { BlurFade } from "@/components/ui/blur-fade";
 
 interface Collab {
   creatorUsername: string | null;
@@ -275,15 +279,6 @@ export default function BrandDetailPage() {
         </div>
       ) : brand ? (
         <div className="max-w-5xl mx-auto">
-          {/* Back Button */}
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">Back</span>
-          </button>
-
           {/* Compact Header - Editorial style */}
           <section className="bg-[var(--surface)] rounded-2xl shadow-lg overflow-hidden animate-fade-up">
             <div className="p-5">
@@ -322,7 +317,7 @@ export default function BrandDetailPage() {
                   {/* Meta row: categories + handle + website */}
                   <div className="flex items-center gap-2 mt-1 flex-wrap text-sm">
                     {brand.category && (
-                      <span className="badge badge-accent text-xs py-0.5">{brand.category}</span>
+                      <Badge variant="default" className="text-xs py-0.5">{brand.category}</Badge>
                     )}
                     <span className="text-[var(--muted)]">@{brand.instagramUsername}</span>
                     {brand.websiteUrl && (
@@ -359,41 +354,43 @@ export default function BrandDetailPage() {
 
                 {/* Action buttons - Inline */}
                 <div className="flex items-center gap-2 shrink-0">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={handleSave}
-                    className={`icon-btn ${saved ? "active" : ""}`}
-                    style={{ width: "36px", height: "36px" }}
+                    className={saved ? "text-primary" : ""}
                     title={saved ? "Saved" : "Save"}
                   >
                     <Heart className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() =>
                       window.open(`https://instagram.com/${brand.instagramUsername}`, "_blank")
                     }
-                    className="icon-btn"
-                    style={{ width: "36px", height: "36px" }}
                     title="View on Instagram"
                   >
                     <Instagram className="w-4 h-4" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={handleShare}
-                    className="icon-btn"
-                    style={{ width: "36px", height: "36px" }}
                     title="Share"
                   >
                     <Share2 className="w-4 h-4" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     disabled
-                    className="btn btn-primary py-2 px-4 text-sm opacity-60 cursor-not-allowed"
+                    size="sm"
+                    className="opacity-60 cursor-not-allowed"
                     title="Coming soon"
                   >
                     <MessageSquare className="w-4 h-4" />
                     <span className="hidden sm:inline">Pitch</span>
                     <span className="text-[9px] opacity-70">Soon</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -447,20 +444,14 @@ export default function BrandDetailPage() {
                 {/* Stats Cards - Moved from header */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {stats.map((stat, index) => (
-                    <div
-                      key={stat.label}
-                      className={`bg-[var(--surface)] rounded-xl shadow-md p-4 text-center transition-all duration-500 hover:shadow-lg ${
-                        statsRevealed
-                          ? "opacity-100 translate-y-0"
-                          : "opacity-0 translate-y-2"
-                      }`}
-                      style={{ transitionDelay: `${index * 75}ms` }}
-                    >
-                      <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stat.value}</p>
-                      <p className="text-[10px] text-[var(--muted)] mt-1 tracking-wider font-medium uppercase">
-                        {stat.label}
-                      </p>
-                    </div>
+                    <BlurFade key={stat.label} delay={index * 0.05}>
+                      <Card className="p-4 text-center hover:shadow-lg transition-shadow">
+                        <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stat.value}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1 tracking-wider font-medium uppercase">
+                          {stat.label}
+                        </p>
+                      </Card>
+                    </BlurFade>
                   ))}
                 </div>
 
@@ -500,9 +491,9 @@ export default function BrandDetailPage() {
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {brand.preferredPostTypes.map((type) => (
-                          <span key={type} className="badge badge-secondary">
+                          <Badge key={type} variant="secondary">
                             {type}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     </div>
@@ -521,9 +512,9 @@ export default function BrandDetailPage() {
                           <span className="text-xs text-[var(--muted)]">Preferred Niches</span>
                           <div className="flex flex-wrap gap-2 mt-1.5">
                             {brand.typicalCreatorNiches.map((niche) => (
-                              <span key={niche} className="badge badge-accent">
+                              <Badge key={niche} variant="default">
                                 {niche}
-                              </span>
+                              </Badge>
                             ))}
                           </div>
                         </div>
@@ -600,9 +591,9 @@ export default function BrandDetailPage() {
                           {collab.postTypes && collab.postTypes.length > 0 && (
                             <div className="flex gap-1.5">
                               {[...new Set(collab.postTypes.filter(Boolean))].slice(0, 3).map((type) => (
-                                <span key={type} className="badge badge-muted capitalize text-xs">
+                                <Badge key={type} variant="muted" className="capitalize text-xs">
                                   {type}
-                                </span>
+                                </Badge>
                               ))}
                             </div>
                           )}
@@ -754,9 +745,9 @@ export default function BrandDetailPage() {
             <p className="text-[var(--muted)] mb-4">
               This brand doesn&apos;t exist or has been removed.
             </p>
-            <Link href="/dashboard" className="btn btn-primary">
-              Back to Dashboard
-            </Link>
+            <Button asChild>
+              <Link href="/dashboard">Back to Dashboard</Link>
+            </Button>
           </div>
         </div>
       )}

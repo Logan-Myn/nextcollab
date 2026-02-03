@@ -7,7 +7,6 @@ import Image from "next/image";
 import { useSession } from "@/lib/auth-client";
 import { DashboardShell } from "@/components/dashboard-shell";
 import {
-  ArrowLeft,
   ExternalLink,
   Share2,
   Globe,
@@ -22,6 +21,10 @@ import {
   Handshake,
   Users,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { BlurFade } from "@/components/ui/blur-fade";
 
 interface BrandWorkedWith {
   brandId: string;
@@ -181,15 +184,6 @@ export default function CreatorDetailPage() {
         </div>
       ) : creator ? (
         <div className="max-w-5xl mx-auto">
-          {/* Back Button */}
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors mb-6"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">Back</span>
-          </button>
-
           {/* Compact Header - Editorial style */}
           <section className="bg-[var(--surface)] rounded-2xl shadow-lg overflow-hidden animate-fade-up">
             <div className="p-5">
@@ -230,7 +224,7 @@ export default function CreatorDetailPage() {
                   {/* Meta row: niche + handle + website */}
                   <div className="flex items-center gap-2 mt-1 flex-wrap text-sm">
                     {creator.niche && (
-                      <span className="badge badge-accent text-xs py-0.5">{creator.niche}</span>
+                      <Badge variant="default" className="text-xs py-0.5">{creator.niche}</Badge>
                     )}
                     <span className="text-[var(--muted)]">@{creator.instagramUsername}</span>
                     {creator.externalUrl && (
@@ -257,24 +251,24 @@ export default function CreatorDetailPage() {
 
                 {/* Action buttons - Inline */}
                 <div className="flex items-center gap-2 shrink-0">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() =>
                       window.open(`https://instagram.com/${creator.instagramUsername}`, "_blank")
                     }
-                    className="icon-btn"
-                    style={{ width: "36px", height: "36px" }}
                     title="View on Instagram"
                   >
                     <Instagram className="w-4 h-4" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={handleShare}
-                    className="icon-btn"
-                    style={{ width: "36px", height: "36px" }}
                     title="Share profile"
                   >
                     <Share2 className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -328,20 +322,14 @@ export default function CreatorDetailPage() {
                 {/* Stats Cards - Moved from header */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {stats.map((stat, index) => (
-                    <div
-                      key={stat.label}
-                      className={`bg-[var(--surface)] rounded-xl shadow-md p-4 text-center transition-all duration-500 hover:shadow-lg ${
-                        statsRevealed
-                          ? "opacity-100 translate-y-0"
-                          : "opacity-0 translate-y-2"
-                      }`}
-                      style={{ transitionDelay: `${index * 75}ms` }}
-                    >
-                      <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stat.value}</p>
-                      <p className="text-[10px] text-[var(--muted)] mt-1 tracking-wider font-medium uppercase">
-                        {stat.label}
-                      </p>
-                    </div>
+                    <BlurFade key={stat.label} delay={index * 0.05}>
+                      <Card className="p-4 text-center hover:shadow-lg transition-shadow">
+                        <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stat.value}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1 tracking-wider font-medium uppercase">
+                          {stat.label}
+                        </p>
+                      </Card>
+                    </BlurFade>
                   ))}
                 </div>
 
@@ -459,9 +447,9 @@ export default function CreatorDetailPage() {
                           {brand.postTypes.length > 0 && (
                             <div className="flex gap-1.5">
                               {brand.postTypes.slice(0, 3).map((type) => (
-                                <span key={type} className="badge badge-muted capitalize text-xs">
+                                <Badge key={type} variant="muted" className="capitalize text-xs">
                                   {type}
-                                </span>
+                                </Badge>
                               ))}
                             </div>
                           )}
@@ -546,9 +534,9 @@ export default function CreatorDetailPage() {
             <p className="text-[var(--muted)] mb-4">
               This creator doesn&apos;t exist or hasn&apos;t been discovered yet.
             </p>
-            <Link href="/dashboard" className="btn btn-primary">
-              Back to Dashboard
-            </Link>
+            <Button asChild>
+              <Link href="/dashboard">Back to Dashboard</Link>
+            </Button>
           </div>
         </div>
       )}

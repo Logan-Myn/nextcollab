@@ -11,6 +11,8 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useBrands, TabType, SortType, ViewMode, BrandFilters } from "@/hooks/use-brands";
 import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface CreatorProfile {
   id: string;
@@ -483,13 +485,13 @@ export default function BrandDiscoveryPage() {
             </div>
             <h3 className="font-semibold mb-2">Something went wrong</h3>
             <p className="text-sm text-[var(--muted)] mb-5">{error}</p>
-            <button
+            <Button
+              variant="outline"
               onClick={() => window.location.reload()}
-              className="btn btn-secondary"
             >
               <RefreshCw className="w-4 h-4" />
               Try Again
-            </button>
+            </Button>
           </div>
         </div>
       ) : brands.length === 0 ? (
@@ -506,7 +508,7 @@ export default function BrandDiscoveryPage() {
                 ? `No results for "${filters.search}". Try a different search term.`
                 : "Try adjusting your filters to see more results."}
             </p>
-            <button
+            <Button
               onClick={() => {
                 setSearchQuery("");
                 setVerifiedOnly(false);
@@ -525,10 +527,9 @@ export default function BrandDiscoveryPage() {
                   verified: false,
                 });
               }}
-              className="btn btn-primary"
             >
               Reset All Filters
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -570,10 +571,12 @@ export default function BrandDiscoveryPage() {
           {/* Load More */}
           {hasMore && (
             <div className="mt-10 text-center">
-              <button
+              <Button
+                variant="outline"
+                size="lg"
                 onClick={loadMore}
                 disabled={isLoading}
-                className="group inline-flex items-center gap-2 px-8 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-sm font-medium hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all disabled:opacity-50"
+                className="group"
               >
                 {isLoading ? (
                   <>
@@ -583,12 +586,12 @@ export default function BrandDiscoveryPage() {
                 ) : (
                   <>
                     Load More Brands
-                    <span className="text-xs text-[var(--muted)] group-hover:text-[var(--accent)]">
+                    <span className="text-xs text-muted-foreground group-hover:text-primary ml-2">
                       ({pagination.total - brands.length} remaining)
                     </span>
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           )}
         </>

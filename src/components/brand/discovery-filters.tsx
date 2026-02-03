@@ -15,6 +15,8 @@ import {
   ArrowDownAZ,
 } from "lucide-react";
 import { TabType, SortType, ViewMode } from "@/hooks/use-brands";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 
 interface DiscoveryFiltersProps {
   tab: TabType;
@@ -328,9 +330,8 @@ export function DiscoveryFilters({
                   </label>
                   <div className="space-y-2">
                     {/* Verified Only */}
-                    <button
-                      onClick={() => onVerifiedOnlyChange?.(!verifiedOnly)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                    <label
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                         verifiedOnly
                           ? "bg-[var(--accent)]/10 border-[var(--accent)]"
                           : "bg-[var(--surface-elevated)] border-transparent hover:border-[var(--border)]"
@@ -345,19 +346,15 @@ export function DiscoveryFilters({
                         <div className="text-sm font-medium truncate">Verified only</div>
                         <div className="text-xs text-[var(--muted)] truncate">Official accounts</div>
                       </div>
-                      <div className={`w-10 h-6 rounded-full p-1 transition-colors shrink-0 ${
-                        verifiedOnly ? "bg-[var(--accent)]" : "bg-[var(--border)]"
-                      }`}>
-                        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                          verifiedOnly ? "translate-x-4" : "translate-x-0"
-                        }`} />
-                      </div>
-                    </button>
+                      <Switch
+                        checked={verifiedOnly}
+                        onCheckedChange={(checked) => onVerifiedOnlyChange?.(checked)}
+                      />
+                    </label>
 
                     {/* Active This Month */}
-                    <button
-                      onClick={() => onActiveOnlyChange?.(!activeOnly)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                    <label
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                         activeOnly
                           ? "bg-[var(--accent)]/10 border-[var(--accent)]"
                           : "bg-[var(--surface-elevated)] border-transparent hover:border-[var(--border)]"
@@ -372,20 +369,16 @@ export function DiscoveryFilters({
                         <div className="text-sm font-medium truncate">Active recently</div>
                         <div className="text-xs text-[var(--muted)] truncate">Partnered this month</div>
                       </div>
-                      <div className={`w-10 h-6 rounded-full p-1 transition-colors shrink-0 ${
-                        activeOnly ? "bg-[var(--accent)]" : "bg-[var(--border)]"
-                      }`}>
-                        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                          activeOnly ? "translate-x-4" : "translate-x-0"
-                        }`} />
-                      </div>
-                    </button>
+                      <Switch
+                        checked={activeOnly}
+                        onCheckedChange={(checked) => onActiveOnlyChange?.(checked)}
+                      />
+                    </label>
 
                     {/* My Niche Only */}
                     {hasProfile && userNiche && (
-                      <button
-                        onClick={() => onMyNicheOnlyChange?.(!myNicheOnly)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                      <label
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                           myNicheOnly
                             ? "bg-[var(--accent)]/10 border-[var(--accent)]"
                             : "bg-[var(--surface-elevated)] border-transparent hover:border-[var(--border)]"
@@ -400,14 +393,11 @@ export function DiscoveryFilters({
                           <div className="text-sm font-medium truncate">My niche</div>
                           <div className="text-xs text-[var(--muted)] truncate capitalize">{userNiche} brands</div>
                         </div>
-                        <div className={`w-10 h-6 rounded-full p-1 transition-colors shrink-0 ${
-                          myNicheOnly ? "bg-[var(--accent)]" : "bg-[var(--border)]"
-                        }`}>
-                          <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                            myNicheOnly ? "translate-x-4" : "translate-x-0"
-                          }`} />
-                        </div>
-                      </button>
+                        <Switch
+                          checked={myNicheOnly}
+                          onCheckedChange={(checked) => onMyNicheOnlyChange?.(checked)}
+                        />
+                      </label>
                     )}
                   </div>
                 </div>

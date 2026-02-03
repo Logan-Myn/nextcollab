@@ -17,6 +17,10 @@ import {
 import { useState, useEffect, useCallback } from "react";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { BrandCard, BrandCardCompact, BrandData } from "@/components/brand-card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { NumberTicker } from "@/components/ui/number-ticker";
+import { BlurFade } from "@/components/ui/blur-fade";
 
 interface CreatorProfile {
   id: string;
@@ -147,61 +151,75 @@ export default function DashboardPage() {
           {/* Stats Overview - Compact header */}
           <section className="mb-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="stat-card animate-fade-up opacity-0" style={{ animationDelay: "0ms", animationFillMode: "forwards" }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="w-4 h-4 text-[var(--accent-secondary)]" />
-                  <span className="text-xs text-[var(--muted)]">Followers</span>
-                </div>
-                <p className="stat-value">
-                  {formatNumber(profile.followers || 0)}
-                </p>
-                <p className="text-xs text-[var(--muted)] mt-1">
-                  {getCreatorTier(profile.followers || 0)} creator
-                </p>
-              </div>
+              <BlurFade delay={0}>
+                <Card className="p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-4 h-4 text-[var(--accent-secondary)]" />
+                    <span className="text-xs text-muted-foreground">Followers</span>
+                  </div>
+                  <p className="text-2xl font-bold tracking-tight">
+                    {profile.followers ? (
+                      <NumberTicker value={profile.followers} className="text-foreground" />
+                    ) : "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {getCreatorTier(profile.followers || 0)} creator
+                  </p>
+                </Card>
+              </BlurFade>
 
-              <div className="stat-card animate-fade-up opacity-0" style={{ animationDelay: "50ms", animationFillMode: "forwards" }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-4 h-4 text-[var(--success)]" />
-                  <span className="text-xs text-[var(--muted)]">Engagement</span>
-                </div>
-                <p className="stat-value">
-                  {profile.engagementRate ? `${profile.engagementRate}%` : "—"}
-                </p>
-                <p className="text-xs text-[var(--muted)] mt-1">
-                  {profile.engagementRate
-                    ? Number(profile.engagementRate) >= 3
-                      ? "Above average"
-                      : "Room to grow"
-                    : "Calculating..."}
-                </p>
-              </div>
+              <BlurFade delay={0.05}>
+                <Card className="p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="w-4 h-4 text-[var(--success)]" />
+                    <span className="text-xs text-muted-foreground">Engagement</span>
+                  </div>
+                  <p className="text-2xl font-bold tracking-tight">
+                    {profile.engagementRate ? (
+                      <>
+                        <NumberTicker value={Number(profile.engagementRate)} decimalPlaces={1} className="text-foreground" />%
+                      </>
+                    ) : "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {profile.engagementRate
+                      ? Number(profile.engagementRate) >= 3
+                        ? "Above average"
+                        : "Room to grow"
+                      : "Calculating..."}
+                  </p>
+                </Card>
+              </BlurFade>
 
-              <div className="stat-card animate-fade-up opacity-0" style={{ animationDelay: "100ms", animationFillMode: "forwards" }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Target className="w-4 h-4 text-[var(--accent)]" />
-                  <span className="text-xs text-[var(--muted)]">Niche</span>
-                </div>
-                <p className="stat-value capitalize">
-                  {profile.niche || "—"}
-                </p>
-                <p className="text-xs text-[var(--muted)] mt-1">
-                  {profile.niche ? "Detected from content" : "Not detected yet"}
-                </p>
-              </div>
+              <BlurFade delay={0.1}>
+                <Card className="p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-4 h-4 text-primary" />
+                    <span className="text-xs text-muted-foreground">Niche</span>
+                  </div>
+                  <p className="text-2xl font-bold tracking-tight capitalize">
+                    {profile.niche || "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {profile.niche ? "Detected from content" : "Not detected yet"}
+                  </p>
+                </Card>
+              </BlurFade>
 
-              <div className="stat-card animate-fade-up opacity-0" style={{ animationDelay: "150ms", animationFillMode: "forwards" }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4 text-[var(--warning)]" />
-                  <span className="text-xs text-[var(--muted)]">Matches</span>
-                </div>
-                <p className="stat-value">
-                  {matchStats?.total || 0}
-                </p>
-                <p className="text-xs text-[var(--muted)] mt-1">
-                  {matchStats?.excellent || 0} excellent fits
-                </p>
-              </div>
+              <BlurFade delay={0.15}>
+                <Card className="p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="w-4 h-4 text-[var(--warning)]" />
+                    <span className="text-xs text-muted-foreground">Matches</span>
+                  </div>
+                  <p className="text-2xl font-bold tracking-tight">
+                    <NumberTicker value={matchStats?.total || 0} className="text-foreground" />
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {matchStats?.excellent || 0} excellent fits
+                  </p>
+                </Card>
+              </BlurFade>
             </div>
           </section>
 
@@ -246,133 +264,136 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-10 text-center">
+              <Card className="p-10 text-center">
                 <div className="w-14 h-14 rounded-xl bg-[var(--accent-light)] flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-7 h-7 text-[var(--accent)]" />
+                  <Sparkles className="w-7 h-7 text-primary" />
                 </div>
                 <h2 className="text-lg font-bold mb-2">Building your matches</h2>
-                <p className="text-sm text-[var(--muted)] max-w-md mx-auto mb-5">
+                <p className="text-sm text-muted-foreground max-w-md mx-auto mb-5">
                   We&apos;re analyzing brands to find the best opportunities for
                   you. Check back soon!
                 </p>
-                <Link href="/brand" className="btn btn-primary">
-                  Browse All Brands
-                </Link>
-              </div>
+                <Button asChild>
+                  <Link href="/brand">Browse All Brands</Link>
+                </Button>
+              </Card>
             )}
           </section>
 
           {/* Pipeline + Trending */}
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Pipeline Preview */}
-            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 animate-fade-up opacity-0" style={{ animationDelay: "300ms", animationFillMode: "forwards" }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Kanban className="w-4 h-4 text-[var(--accent)]" />
-                  <h2 className="font-semibold text-sm">Your Pipeline</h2>
-                </div>
-                <Link
-                  href="/dashboard/pipeline"
-                  className="text-xs text-[var(--accent)] hover:text-[var(--accent-dark)] flex items-center gap-1 transition-colors"
-                >
-                  Manage
-                  <ChevronRight className="w-3 h-3" />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2 text-center mb-4">
-                {[
-                  { label: "Saved", count: 0, color: "var(--muted)" },
-                  { label: "Pitched", count: 0, color: "var(--accent-secondary)" },
-                  { label: "Talking", count: 0, color: "var(--warning)" },
-                  { label: "Won", count: 0, color: "var(--success)" },
-                ].map((stage) => (
-                  <div
-                    key={stage.label}
-                    className="p-3 rounded-lg bg-[var(--surface-elevated)]"
-                  >
-                    <p
-                      className="text-lg font-bold mb-0.5"
-                      style={{ color: stage.color }}
-                    >
-                      {stage.count}
-                    </p>
-                    <p className="text-[10px] font-medium text-[var(--muted)]">{stage.label}</p>
+            <BlurFade delay={0.3}>
+              <Card className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Kanban className="w-4 h-4 text-primary" />
+                    <h2 className="font-semibold text-sm">Your Pipeline</h2>
                   </div>
-                ))}
-              </div>
-
-              <div className="pt-3 border-t border-[var(--border)] text-center">
-                <p className="text-xs text-[var(--muted)] mb-3">
-                  Track your outreach progress
-                </p>
-                <Link
-                  href="/dashboard/pipeline"
-                  className="btn btn-secondary text-xs py-2 px-4"
-                >
-                  Open Pipeline
-                </Link>
-              </div>
-            </div>
-
-            {/* Trending Brands */}
-            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 animate-fade-up opacity-0" style={{ animationDelay: "350ms", animationFillMode: "forwards" }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-[var(--accent-secondary)]" />
-                  <h2 className="font-semibold text-sm">
-                    {profile.niche
-                      ? `Trending in ${profile.niche}`
-                      : "Trending Brands"}
-                  </h2>
+                  <Link
+                    href="/dashboard/pipeline"
+                    className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+                  >
+                    Manage
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
                 </div>
-                <Link
-                  href="/brand"
-                  className="text-xs text-[var(--accent)] hover:text-[var(--accent-dark)] flex items-center gap-1 transition-colors"
-                >
-                  Explore
-                  <ChevronRight className="w-3 h-3" />
-                </Link>
-              </div>
 
-              {matches.length > 0 ? (
-                <div className="space-y-2">
-                  {matches.slice(0, 4).map((brand, index) => (
-                    <BrandCardCompact key={brand.id} brand={brand} index={index} />
+                <div className="grid grid-cols-4 gap-2 text-center mb-4">
+                  {[
+                    { label: "Saved", count: 0, color: "var(--muted)" },
+                    { label: "Pitched", count: 0, color: "var(--accent-secondary)" },
+                    { label: "Talking", count: 0, color: "var(--warning)" },
+                    { label: "Won", count: 0, color: "var(--success)" },
+                  ].map((stage) => (
+                    <div
+                      key={stage.label}
+                      className="p-3 rounded-lg bg-secondary"
+                    >
+                      <p
+                        className="text-lg font-bold mb-0.5"
+                        style={{ color: stage.color }}
+                      >
+                        {stage.count}
+                      </p>
+                      <p className="text-[10px] font-medium text-muted-foreground">{stage.label}</p>
+                    </div>
                   ))}
                 </div>
-              ) : (
-                <div className="py-8 text-center">
-                  <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-[var(--surface-elevated)] flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-[var(--muted)]" />
-                  </div>
-                  <p className="text-sm text-[var(--muted)]">
-                    Discovering trending brands...
+
+                <div className="pt-3 border-t border-border text-center">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Track your outreach progress
                   </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/dashboard/pipeline">Open Pipeline</Link>
+                  </Button>
                 </div>
-              )}
-            </div>
+              </Card>
+            </BlurFade>
+
+            {/* Trending Brands */}
+            <BlurFade delay={0.35}>
+              <Card className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-[var(--accent-secondary)]" />
+                    <h2 className="font-semibold text-sm">
+                      {profile.niche
+                        ? `Trending in ${profile.niche}`
+                        : "Trending Brands"}
+                    </h2>
+                  </div>
+                  <Link
+                    href="/brand"
+                    className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+                  >
+                    Explore
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+
+                {matches.length > 0 ? (
+                  <div className="space-y-2">
+                    {matches.slice(0, 4).map((brand, index) => (
+                      <BrandCardCompact key={brand.id} brand={brand} index={index} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center">
+                    <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-secondary flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Discovering trending brands...
+                    </p>
+                  </div>
+                )}
+              </Card>
+            </BlurFade>
           </section>
         </>
       ) : (
         /* Empty State: No Profile */
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-10 text-center max-w-md">
-            <div className="w-16 h-16 rounded-xl bg-[var(--accent)] flex items-center justify-center mx-auto mb-5">
+          <Card className="p-10 text-center max-w-md">
+            <div className="w-16 h-16 rounded-xl bg-primary flex items-center justify-center mx-auto mb-5">
               <Instagram className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-xl font-bold mb-2">
               Connect Your Instagram
             </h2>
-            <p className="text-sm text-[var(--muted)] mb-5">
+            <p className="text-sm text-muted-foreground mb-5">
               Add your Instagram username to unlock AI-powered brand matches
               tailored to your content and audience.
             </p>
-            <Link href="/onboarding" className="btn btn-primary">
-              <Instagram className="w-5 h-5" />
-              Get Started
-            </Link>
-          </div>
+            <Button asChild>
+              <Link href="/onboarding">
+                <Instagram className="w-5 h-5" />
+                Get Started
+              </Link>
+            </Button>
+          </Card>
         </div>
       )}
     </DashboardShell>

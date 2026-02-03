@@ -8,6 +8,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { signIn } from "@/lib/auth-client";
 import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ShimmerButton } from "@/components/ui/shimmer-button";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -72,86 +76,81 @@ export default function LoginPage() {
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Email */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium mb-2"
-            >
-              Email
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
               {...register("email")}
               type="email"
               id="email"
               autoComplete="email"
               placeholder="you@example.com"
-              className="w-full px-4 py-3 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-all"
+              className="h-12 rounded-xl bg-[var(--surface-elevated)]"
             />
             {errors.email && (
-              <p className="mt-1.5 text-sm text-red-500">{errors.email.message}</p>
+              <p className="text-sm text-destructive">{errors.email.message}</p>
             )}
           </div>
 
           {/* Password */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium"
-              >
-                Password
-              </label>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-sm text-[var(--accent)] hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 Forgot password?
               </Link>
             </div>
             <div className="relative">
-              <input
+              <Input
                 {...register("password")}
                 type={showPassword ? "text" : "password"}
                 id="password"
                 autoComplete="current-password"
                 placeholder="Enter your password"
-                className="w-full px-4 py-3 pr-12 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-all"
+                className="h-12 pr-12 rounded-xl bg-[var(--surface-elevated)]"
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2"
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
                 ) : (
                   <Eye className="w-5 h-5" />
                 )}
-              </button>
+              </Button>
             </div>
             {errors.password && (
-              <p className="mt-1.5 text-sm text-red-500">{errors.password.message}</p>
+              <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
 
           {/* Submit */}
-          <button
+          <ShimmerButton
             type="submit"
             disabled={isSubmitting}
-            className="w-full btn btn-primary py-3.5 mt-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full h-12 mt-2 text-base font-medium disabled:opacity-50"
+            background="var(--accent)"
+            shimmerColor="rgba(255,255,255,0.3)"
+            borderRadius="12px"
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
                 Signing in...
               </>
             ) : (
               <>
                 Sign in
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-5 h-5 ml-2" />
               </>
             )}
-          </button>
+          </ShimmerButton>
         </form>
 
         {/* Divider */}
@@ -167,12 +166,9 @@ export default function LoginPage() {
         </div>
 
         {/* Sign up link */}
-        <Link
-          href="/signup"
-          className="w-full btn btn-secondary py-3.5 flex items-center justify-center"
-        >
-          Create an account
-        </Link>
+        <Button variant="outline" size="lg" className="w-full h-12" asChild>
+          <Link href="/signup">Create an account</Link>
+        </Button>
       </div>
 
       {/* Terms */}

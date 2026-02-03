@@ -4,6 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Heart, ExternalLink, TrendingUp, Users } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 export interface BrandData {
   id: string;
@@ -87,9 +90,10 @@ export function BrandCard({
   return (
     <Link
       href={`/brand/${brand.instagramUsername || brand.id}`}
-      className="group block bg-[var(--surface)] rounded-xl border border-[var(--border)] overflow-hidden card-hover animate-fade-up opacity-0"
+      className="group block animate-fade-up opacity-0"
       style={{ animationDelay, animationFillMode: "forwards" }}
     >
+      <Card className="overflow-hidden hover:border-primary hover:-translate-y-0.5 transition-all">
       <div className="p-5">
         {/* Header: Logo + Name + Activity */}
         <div className="flex items-start justify-between mb-4">
@@ -154,10 +158,10 @@ export function BrandCard({
         {/* Category & Niche */}
         <div className="flex flex-wrap gap-1.5 mb-4">
           {brand.category && (
-            <span className="badge badge-accent">{brand.category}</span>
+            <Badge variant="default">{brand.category}</Badge>
           )}
           {brand.niche && brand.niche !== brand.category && (
-            <span className="badge badge-muted">{brand.niche}</span>
+            <Badge variant="muted">{brand.niche}</Badge>
           )}
         </div>
 
@@ -209,19 +213,22 @@ export function BrandCard({
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-2 pt-3 border-t border-[var(--border)]">
-          <button
+        <div className="flex items-center gap-2 pt-3 border-t border-border">
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={handleSave}
-            className={`icon-btn ${saved ? "active" : ""}`}
+            className={saved ? "text-primary bg-[var(--accent-light)]" : ""}
             title={saved ? "Remove from saved" : "Save brand"}
           >
             <Heart className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
-          </button>
-          <span className="flex-1 btn btn-secondary text-xs py-2 text-center">
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1 text-xs">
             View Details
-          </span>
-          <button
-            className="icon-btn"
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
             title="View on Instagram"
             onClick={(e) => {
               e.preventDefault();
@@ -235,9 +242,10 @@ export function BrandCard({
             }}
           >
             <ExternalLink className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
+      </Card>
     </Link>
   );
 }
@@ -307,23 +315,28 @@ export function BrandCardCompact({
 
       {/* Match Score Badge */}
       {matchScore > 0 && (
-        <div
-          className={`px-2 py-1 rounded text-xs font-semibold ${
+        <Badge
+          variant={
             matchClass === "excellent"
-              ? "bg-[var(--success-light)] text-[var(--success)]"
+              ? "success"
               : matchClass === "good"
-                ? "bg-[var(--accent-light)] text-[var(--accent)]"
-                : "bg-[var(--warning-light)] text-[var(--warning)]"
-          }`}
+                ? "default"
+                : "warning"
+          }
         >
           {matchScore}%
-        </div>
+        </Badge>
       )}
 
       {/* Save button */}
-      <button onClick={handleSave} className={`icon-btn ${saved ? "active" : ""}`}>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={handleSave}
+        className={saved ? "text-primary" : ""}
+      >
         <Heart className={`w-3.5 h-3.5 ${saved ? "fill-current" : ""}`} />
-      </button>
+      </Button>
     </Link>
   );
 }

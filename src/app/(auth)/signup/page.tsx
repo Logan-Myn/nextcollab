@@ -8,6 +8,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { signUp } from "@/lib/auth-client";
 import { Eye, EyeOff, ArrowRight, Loader2, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ShimmerButton } from "@/components/ui/shimmer-button";
 
 const signupSchema = z
   .object({
@@ -95,75 +99,62 @@ export default function SignupPage() {
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Name */}
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium mb-2"
-            >
-              Full name
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="name">Full name</Label>
+            <Input
               {...register("name")}
               type="text"
               id="name"
               autoComplete="name"
               placeholder="Your name"
-              className="w-full px-4 py-3 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-all"
+              className="h-12 rounded-xl bg-[var(--surface-elevated)]"
             />
             {errors.name && (
-              <p className="mt-1.5 text-sm text-red-500">{errors.name.message}</p>
+              <p className="text-sm text-destructive">{errors.name.message}</p>
             )}
           </div>
 
           {/* Email */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium mb-2"
-            >
-              Email
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
               {...register("email")}
               type="email"
               id="email"
               autoComplete="email"
               placeholder="you@example.com"
-              className="w-full px-4 py-3 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-all"
+              className="h-12 rounded-xl bg-[var(--surface-elevated)]"
             />
             {errors.email && (
-              <p className="mt-1.5 text-sm text-red-500">{errors.email.message}</p>
+              <p className="text-sm text-destructive">{errors.email.message}</p>
             )}
           </div>
 
           {/* Password */}
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium mb-2"
-            >
-              Password
-            </label>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
             <div className="relative">
-              <input
+              <Input
                 {...register("password")}
                 type={showPassword ? "text" : "password"}
                 id="password"
                 autoComplete="new-password"
                 placeholder="Create a password"
-                className="w-full px-4 py-3 pr-12 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-all"
+                className="h-12 pr-12 rounded-xl bg-[var(--surface-elevated)]"
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2"
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
                 ) : (
                   <Eye className="w-5 h-5" />
                 )}
-              </button>
+              </Button>
             </div>
 
             {/* Password requirements */}
@@ -200,59 +191,59 @@ export default function SignupPage() {
           </div>
 
           {/* Confirm Password */}
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium mb-2"
-            >
-              Confirm password
-            </label>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm password</Label>
             <div className="relative">
-              <input
+              <Input
                 {...register("confirmPassword")}
                 type={showConfirmPassword ? "text" : "password"}
                 id="confirmPassword"
                 autoComplete="new-password"
                 placeholder="Confirm your password"
-                className="w-full px-4 py-3 pr-12 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent transition-all"
+                className="h-12 pr-12 rounded-xl bg-[var(--surface-elevated)]"
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2"
               >
                 {showConfirmPassword ? (
                   <EyeOff className="w-5 h-5" />
                 ) : (
                   <Eye className="w-5 h-5" />
                 )}
-              </button>
+              </Button>
             </div>
             {errors.confirmPassword && (
-              <p className="mt-1.5 text-sm text-red-500">
+              <p className="text-sm text-destructive">
                 {errors.confirmPassword.message}
               </p>
             )}
           </div>
 
           {/* Submit */}
-          <button
+          <ShimmerButton
             type="submit"
             disabled={isSubmitting}
-            className="w-full btn btn-primary py-3.5 mt-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full h-12 mt-2 text-base font-medium disabled:opacity-50"
+            background="var(--accent)"
+            shimmerColor="rgba(255,255,255,0.3)"
+            borderRadius="12px"
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
                 Creating account...
               </>
             ) : (
               <>
                 Create account
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-5 h-5 ml-2" />
               </>
             )}
-          </button>
+          </ShimmerButton>
         </form>
 
         {/* Divider */}
@@ -268,12 +259,9 @@ export default function SignupPage() {
         </div>
 
         {/* Sign in link */}
-        <Link
-          href="/login"
-          className="w-full btn btn-secondary py-3.5 flex items-center justify-center"
-        >
-          Sign in instead
-        </Link>
+        <Button variant="outline" size="lg" className="w-full h-12" asChild>
+          <Link href="/login">Sign in instead</Link>
+        </Button>
       </div>
 
       {/* Terms */}
