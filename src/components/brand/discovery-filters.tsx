@@ -1,31 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
-  ChevronUp,
+  ChevronDown,
   LayoutGrid,
   List,
-  SlidersHorizontal,
   X,
   Sparkles,
   Zap,
-  Users,
-  BadgeCheck,
   TrendingUp,
   ArrowDownAZ,
+  Users,
+  Globe,
+  Flame,
+  Search,
+  Check,
 } from "lucide-react";
-import { TabType, SortType, ViewMode } from "@/hooks/use-brands";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { TabType, SortType, ViewMode, CreatorTier, CategoryCount } from "@/hooks/use-brands";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 
 interface DiscoveryFiltersProps {
   tab: TabType;
   onTabChange: (tab: TabType) => void;
   category: string;
   onCategoryChange: (category: string) => void;
-  categories: string[];
-  followerRange: string;
-  onFollowerRangeChange: (range: string) => void;
+  categoryCounts: CategoryCount[];
+  activityLevel: string;
+  onActivityLevelChange: (level: string) => void;
+  creatorTier: CreatorTier;
+  onCreatorTierChange: (tier: CreatorTier) => void;
+  sponsorsNiche: string;
+  onSponsorsNicheChange: (niche: string) => void;
+  creatorNiches: string[];
+  hasWebsite: boolean;
+  onHasWebsiteChange: (value: boolean) => void;
   sort: SortType;
   onSortChange: (sort: SortType) => void;
   viewMode: ViewMode;
@@ -33,59 +51,85 @@ interface DiscoveryFiltersProps {
   matchCount?: number;
   savedCount?: number;
   hasProfile: boolean;
-  verifiedOnly?: boolean;
-  onVerifiedOnlyChange?: (value: boolean) => void;
-  activeOnly?: boolean;
-  onActiveOnlyChange?: (value: boolean) => void;
-  myNicheOnly?: boolean;
-  onMyNicheOnlyChange?: (value: boolean) => void;
   userNiche?: string | null;
+  userFollowers?: number | null;
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
-  Fashion: "👗",
-  Beauty: "💄",
-  Fitness: "💪",
-  Food: "🍕",
-  Tech: "💻",
-  Travel: "✈️",
-  Lifestyle: "🌟",
-  Gaming: "🎮",
-  Music: "🎵",
-  Sports: "⚽",
-  Health: "🏥",
-  Finance: "💰",
-  Education: "📚",
-  Entertainment: "🎬",
-  Retail: "🛍️",
-  Home: "🏠",
-  Media: "📺",
-  Other: "📦",
+  tech: "💻",
+  gaming: "🎮",
+  beauty: "💄",
+  fashion: "👗",
+  food: "🍕",
+  retail: "🛍️",
+  media: "📺",
+  entertainment: "🎬",
+  home: "🏠",
+  fitness: "💪",
+  health: "🏥",
+  hospitality: "🏨",
+  other: "📦",
 };
 
-const FOLLOWER_RANGES = [
-  { label: "All", value: "", description: "Any size" },
-  { label: "Nano", value: "0-10000", description: "<10K" },
-  { label: "Micro", value: "10000-100000", description: "10K-100K" },
-  { label: "Mid", value: "100000-1000000", description: "100K-1M" },
-  { label: "Macro", value: "1000000-", description: "1M+" },
+const NICHE_ICONS: Record<string, string> = {
+  tech: "💻",
+  lifestyle: "✨",
+  art: "🎨",
+  food: "🍕",
+  beauty: "💄",
+  travel: "✈️",
+  pets: "🐾",
+  sports: "⚽",
+  fitness: "💪",
+  fashion: "👗",
+};
+
+const CREATOR_TIER_OPTIONS: { label: string; value: CreatorTier; description: string }[] = [
+  { label: "Any size", value: "", description: "All creator tiers" },
+  { label: "Nano", value: "nano", description: "<10K followers" },
+  { label: "Micro", value: "micro", description: "10K-50K" },
+  { label: "Mid-tier", value: "mid", description: "50K-100K" },
+  { label: "Macro", value: "macro", description: "100K-500K" },
+  { label: "Mega", value: "mega", description: "500K+" },
 ];
 
-const SORT_OPTIONS: { label: string; value: SortType; icon: React.ReactNode; description: string }[] = [
-  { label: "Best Match", value: "matchScore", icon: <Sparkles className="w-4 h-4" />, description: "AI-powered relevance" },
-  { label: "Most Active", value: "partnershipCount", icon: <TrendingUp className="w-4 h-4" />, description: "Recent partnerships" },
-  { label: "Followers", value: "followers", icon: <Users className="w-4 h-4" />, description: "Audience size" },
-  { label: "A to Z", value: "name", icon: <ArrowDownAZ className="w-4 h-4" />, description: "Alphabetical" },
+const ACTIVITY_OPTIONS: { label: string; value: string; icon: React.ReactNode }[] = [
+  { label: "Any", value: "", icon: null },
+  { label: "Active", value: "active", icon: <Zap className="w-3.5 h-3.5" /> },
+  { label: "Very Active", value: "veryActive", icon: <Flame className="w-3.5 h-3.5" /> },
+  { label: "Rising", value: "rising", icon: <TrendingUp className="w-3.5 h-3.5" /> },
 ];
+
+const SORT_OPTIONS: { label: string; value: SortType; icon: React.ReactNode }[] = [
+  { label: "Most Active", value: "partnershipCount", icon: <Flame className="w-4 h-4" /> },
+  { label: "Rising", value: "rising", icon: <TrendingUp className="w-4 h-4" /> },
+  { label: "A to Z", value: "name", icon: <ArrowDownAZ className="w-4 h-4" /> },
+];
+
+function getCreatorTierFromFollowers(followers: number | null | undefined): CreatorTier {
+  if (!followers) return "";
+  if (followers < 10000) return "nano";
+  if (followers < 50000) return "micro";
+  if (followers < 100000) return "mid";
+  if (followers < 500000) return "macro";
+  return "mega";
+}
 
 export function DiscoveryFilters({
   tab,
   onTabChange,
   category,
   onCategoryChange,
-  categories,
-  followerRange,
-  onFollowerRangeChange,
+  categoryCounts,
+  activityLevel,
+  onActivityLevelChange,
+  creatorTier,
+  onCreatorTierChange,
+  sponsorsNiche,
+  onSponsorsNicheChange,
+  creatorNiches,
+  hasWebsite,
+  onHasWebsiteChange,
   sort,
   onSortChange,
   viewMode,
@@ -93,38 +137,54 @@ export function DiscoveryFilters({
   matchCount,
   savedCount = 0,
   hasProfile,
-  verifiedOnly = false,
-  onVerifiedOnlyChange,
-  activeOnly = false,
-  onActiveOnlyChange,
-  myNicheOnly = false,
-  onMyNicheOnlyChange,
   userNiche,
+  userFollowers,
 }: DiscoveryFiltersProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState("");
+  const [nicheOpen, setNicheOpen] = useState(false);
+  const [nicheSearch, setNicheSearch] = useState("");
+
+  // Filter categories by search
+  const filteredCategories = useMemo(() => {
+    if (!categorySearch) return categoryCounts;
+    const search = categorySearch.toLowerCase();
+    return categoryCounts.filter(c => c.name.toLowerCase().includes(search));
+  }, [categoryCounts, categorySearch]);
+
+  // Filter niches by search
+  const filteredNiches = useMemo(() => {
+    if (!nicheSearch) return creatorNiches;
+    const search = nicheSearch.toLowerCase();
+    return creatorNiches.filter(n => n.toLowerCase().includes(search));
+  }, [creatorNiches, nicheSearch]);
 
   // Count active filters
   const activeFilterCount = [
     category,
-    followerRange,
-    verifiedOnly,
-    activeOnly,
-    myNicheOnly,
+    activityLevel,
+    creatorTier,
+    sponsorsNiche,
+    hasWebsite,
   ].filter(Boolean).length;
 
   const clearAllFilters = () => {
     onCategoryChange("");
-    onFollowerRangeChange("");
-    onVerifiedOnlyChange?.(false);
-    onActiveOnlyChange?.(false);
-    onMyNicheOnlyChange?.(false);
+    onActivityLevelChange("");
+    onCreatorTierChange("");
+    onSponsorsNicheChange("");
+    onHasWebsiteChange(false);
   };
 
+  // Get user's tier for smart filter
+  const userTier = getCreatorTierFromFollowers(userFollowers);
+  const userTierLabel = CREATOR_TIER_OPTIONS.find(t => t.value === userTier)?.label || "";
+
   return (
-    <div className="mb-6">
-      {/* Main Filter Bar */}
+    <div className="mb-6 space-y-4">
+      {/* Row 1: Tabs + View Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Left: Tabs */}
+        {/* Tabs */}
         <div className="flex items-center gap-1 p-1 bg-[var(--surface)] rounded-xl border border-[var(--border)]">
           <button
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
@@ -175,30 +235,8 @@ export function DiscoveryFilters({
           </button>
         </div>
 
-        {/* Right: Filter Button + View Toggle */}
+        {/* View Toggle */}
         <div className="flex items-center gap-2">
-          {/* Filter Toggle Button */}
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className={`flex items-center gap-2 h-10 px-4 rounded-xl border transition-all ${
-              isExpanded || activeFilterCount > 0
-                ? "bg-[var(--accent)] border-[var(--accent)] text-white"
-                : "bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            }`}
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span className="text-sm font-medium">Filters</span>
-            {activeFilterCount > 0 && (
-              <span className={`flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full ${
-                isExpanded ? "bg-white/20 text-white" : "bg-white text-[var(--accent)]"
-              }`}>
-                {activeFilterCount}
-              </span>
-            )}
-            <ChevronUp className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? "" : "rotate-180"}`} />
-          </button>
-
-          {/* View Toggle */}
           <div className="flex bg-[var(--surface)] border border-[var(--border)] rounded-xl p-1">
             <button
               onClick={() => onViewModeChange("grid")}
@@ -226,229 +264,304 @@ export function DiscoveryFilters({
         </div>
       </div>
 
-      {/* Expandable Filter Panel - Inline Accordion */}
-      <div
-        className="grid transition-all duration-300 ease-out"
-        style={{
-          gridTemplateRows: isExpanded ? "1fr" : "0fr",
-        }}
-      >
-        <div className="overflow-hidden">
-          <div className="pt-6">
-            {/* Filter Panel Content */}
-            <div className="p-6 bg-[var(--surface)] border border-[var(--border)] rounded-2xl">
-              {/* Panel Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center">
-                    <SlidersHorizontal className="w-5 h-5 text-[var(--accent)]" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm">Filter Brands</h3>
-                    <p className="text-xs text-[var(--muted)]">
-                      {activeFilterCount > 0 ? `${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''} active` : 'Refine your search'}
-                    </p>
-                  </div>
-                </div>
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="text-sm font-medium text-[var(--muted)] hover:text-[var(--error)] transition-colors"
-                  >
-                    Clear all
-                  </button>
-                )}
-              </div>
+      {/* Row 2: Smart Filters (profile-dependent) + Quick Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Smart Filter: Matches my tier */}
+        {hasProfile && userFollowers && userTier && (
+          <button
+            onClick={() => onCreatorTierChange(creatorTier === userTier ? "" : userTier)}
+            className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl border transition-all ${
+              creatorTier === userTier
+                ? "bg-[var(--accent)] border-[var(--accent)] text-white"
+                : "bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Works with {userTierLabel}</span>
+            {creatorTier === userTier && (
+              <X className="w-3.5 h-3.5 ml-1 opacity-70" />
+            )}
+          </button>
+        )}
 
-              {/* Filter Grid - 4 Columns on Desktop */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Column 1: Category */}
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">
-                    Category
-                  </label>
-                  <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-2 scrollbar-thin">
-                    <button
-                      onClick={() => onCategoryChange("")}
-                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all text-left ${
-                        !category
-                          ? "bg-[var(--accent)] text-white"
-                          : "bg-[var(--surface-elevated)] text-[var(--foreground)] hover:bg-[var(--border)]"
-                      }`}
-                    >
-                      <span className="w-5 text-center">✨</span>
-                      All Categories
-                    </button>
-                    {categories.map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => onCategoryChange(cat === category ? "" : cat)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all text-left ${
-                          category === cat
-                            ? "bg-[var(--accent)] text-white"
-                            : "bg-[var(--surface-elevated)] text-[var(--foreground)] hover:bg-[var(--border)]"
-                        }`}
-                      >
-                        <span className="w-5 text-center">{CATEGORY_ICONS[cat] || "📦"}</span>
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+        {/* Divider if smart filters exist */}
+        {hasProfile && userFollowers && (
+          <div className="w-px h-6 bg-[var(--border)] mx-1 hidden sm:block" />
+        )}
 
-                {/* Column 2: Brand Size */}
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">
-                    Brand Size
-                  </label>
-                  <div className="space-y-1.5">
-                    {FOLLOWER_RANGES.map((range) => (
-                      <button
-                        key={range.value}
-                        onClick={() => onFollowerRangeChange(range.value === followerRange ? "" : range.value)}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all ${
-                          followerRange === range.value
-                            ? "bg-[var(--accent)] text-white"
-                            : "bg-[var(--surface-elevated)] text-[var(--foreground)] hover:bg-[var(--border)]"
-                        }`}
-                      >
-                        <span className="text-sm font-medium">{range.label}</span>
-                        <span className={`text-xs ${
-                          followerRange === range.value ? "text-white/70" : "text-[var(--muted)]"
-                        }`}>
-                          {range.description}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Column 3: Smart Filters */}
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">
-                    Smart Filters
-                  </label>
-                  <div className="space-y-2">
-                    {/* Verified Only */}
-                    <label
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-                        verifiedOnly
-                          ? "bg-[var(--accent)]/10 border-[var(--accent)]"
-                          : "bg-[var(--surface-elevated)] border-transparent hover:border-[var(--border)]"
-                      }`}
-                    >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        verifiedOnly ? "bg-[var(--accent)]" : "bg-[var(--border)]"
-                      }`}>
-                        <BadgeCheck className={`w-4 h-4 ${verifiedOnly ? "text-white" : "text-[var(--muted)]"}`} />
-                      </div>
-                      <div className="text-left flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">Verified only</div>
-                        <div className="text-xs text-[var(--muted)] truncate">Official accounts</div>
-                      </div>
-                      <Switch
-                        checked={verifiedOnly}
-                        onCheckedChange={(checked) => onVerifiedOnlyChange?.(checked)}
-                      />
-                    </label>
-
-                    {/* Active This Month */}
-                    <label
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-                        activeOnly
-                          ? "bg-[var(--accent)]/10 border-[var(--accent)]"
-                          : "bg-[var(--surface-elevated)] border-transparent hover:border-[var(--border)]"
-                      }`}
-                    >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        activeOnly ? "bg-[var(--accent)]" : "bg-[var(--border)]"
-                      }`}>
-                        <Zap className={`w-4 h-4 ${activeOnly ? "text-white" : "text-[var(--muted)]"}`} />
-                      </div>
-                      <div className="text-left flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">Active recently</div>
-                        <div className="text-xs text-[var(--muted)] truncate">Partnered this month</div>
-                      </div>
-                      <Switch
-                        checked={activeOnly}
-                        onCheckedChange={(checked) => onActiveOnlyChange?.(checked)}
-                      />
-                    </label>
-
-                    {/* My Niche Only */}
-                    {hasProfile && userNiche && (
-                      <label
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
-                          myNicheOnly
-                            ? "bg-[var(--accent)]/10 border-[var(--accent)]"
-                            : "bg-[var(--surface-elevated)] border-transparent hover:border-[var(--border)]"
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                          myNicheOnly ? "bg-[var(--accent)]" : "bg-[var(--border)]"
-                        }`}>
-                          <Sparkles className={`w-4 h-4 ${myNicheOnly ? "text-white" : "text-[var(--muted)]"}`} />
-                        </div>
-                        <div className="text-left flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">My niche</div>
-                          <div className="text-xs text-[var(--muted)] truncate capitalize">{userNiche} brands</div>
-                        </div>
-                        <Switch
-                          checked={myNicheOnly}
-                          onCheckedChange={(checked) => onMyNicheOnlyChange?.(checked)}
-                        />
-                      </label>
-                    )}
-                  </div>
-                </div>
-
-                {/* Column 4: Sort By */}
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted)] mb-3">
-                    Sort By
-                  </label>
-                  <div className="space-y-1.5">
-                    {SORT_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => onSortChange(option.value)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-                          sort === option.value
-                            ? "bg-[var(--accent)] text-white"
-                            : "bg-[var(--surface-elevated)] text-[var(--foreground)] hover:bg-[var(--border)]"
-                        }`}
-                      >
-                        <div className={`w-7 h-7 rounded-md flex items-center justify-center ${
-                          sort === option.value ? "bg-white/20" : "bg-[var(--border)]"
-                        }`}>
-                          {option.icon}
-                        </div>
-                        <div className="text-left flex-1">
-                          <div className="text-sm font-medium">{option.label}</div>
-                          <div className={`text-xs ${
-                            sort === option.value ? "text-white/70" : "text-[var(--muted)]"
-                          }`}>
-                            {option.description}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+        {/* Category Dropdown with Search */}
+        <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+          <PopoverTrigger asChild>
+            <button
+              className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl border transition-all ${
+                category
+                  ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--accent)]"
+                  : "bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)]"
+              }`}
+            >
+              {category ? (
+                <>
+                  <span>{CATEGORY_ICONS[category.toLowerCase()] || "📦"}</span>
+                  <span className="capitalize">{category}</span>
+                </>
+              ) : (
+                <span>Category</span>
+              )}
+              <ChevronDown className="w-4 h-4 opacity-50" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-[280px] p-0">
+            {/* Search input */}
+            <div className="p-2 border-b border-[var(--border)]">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
+                <Input
+                  placeholder="Search categories..."
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                  className="pl-8 h-9 text-sm"
+                />
               </div>
             </div>
-          </div>
-        </div>
+            {/* Category list */}
+            <div className="max-h-[280px] overflow-y-auto p-2">
+              {/* All option */}
+              <button
+                onClick={() => {
+                  onCategoryChange("");
+                  setCategoryOpen(false);
+                  setCategorySearch("");
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-lg transition-all ${
+                  !category
+                    ? "bg-[var(--accent)] text-white"
+                    : "hover:bg-[var(--surface-elevated)]"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-base">✨</span>
+                  <span className="font-medium">All Categories</span>
+                </div>
+                {!category && <Check className="w-4 h-4" />}
+              </button>
+
+              {filteredCategories.length === 0 ? (
+                <div className="px-3 py-6 text-center text-sm text-[var(--muted)]">
+                  No categories found
+                </div>
+              ) : (
+                filteredCategories.map((cat) => (
+                  <button
+                    key={cat.name}
+                    onClick={() => {
+                      onCategoryChange(cat.name === category ? "" : cat.name);
+                      setCategoryOpen(false);
+                      setCategorySearch("");
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-lg transition-all ${
+                      category === cat.name
+                        ? "bg-[var(--accent)] text-white"
+                        : "hover:bg-[var(--surface-elevated)]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base">{CATEGORY_ICONS[cat.name.toLowerCase()] || "📦"}</span>
+                      <span className="font-medium capitalize">{cat.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs ${category === cat.name ? "text-white/70" : "text-[var(--muted)]"}`}>
+                        {cat.count}
+                      </span>
+                      {category === cat.name && <Check className="w-4 h-4" />}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Activity Level Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl border transition-all ${
+                activityLevel
+                  ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--accent)]"
+                  : "bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)]"
+              }`}
+            >
+              {activityLevel ? (
+                <>
+                  {ACTIVITY_OPTIONS.find(o => o.value === activityLevel)?.icon}
+                  <span>{ACTIVITY_OPTIONS.find(o => o.value === activityLevel)?.label}</span>
+                </>
+              ) : (
+                <span>Activity</span>
+              )}
+              <ChevronDown className="w-4 h-4 opacity-50" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[180px] p-2">
+            {ACTIVITY_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => onActivityLevelChange(option.value)}
+                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-all ${
+                  activityLevel === option.value
+                    ? "bg-[var(--accent)] text-white"
+                    : "hover:bg-[var(--surface-elevated)]"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {option.icon}
+                  <span>{option.label}</span>
+                </div>
+                {activityLevel === option.value && <Check className="w-4 h-4" />}
+              </button>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Sponsors Niche Dropdown with Search */}
+        {creatorNiches.length > 0 && (
+          <Popover open={nicheOpen} onOpenChange={setNicheOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl border transition-all ${
+                  sponsorsNiche
+                    ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--accent)]"
+                    : "bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)]"
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="capitalize">{sponsorsNiche || "Sponsors Niche"}</span>
+                <ChevronDown className="w-4 h-4 opacity-50" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-[240px] p-0">
+              {/* Search input */}
+              <div className="p-2 border-b border-[var(--border)]">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
+                  <Input
+                    placeholder="Search niches..."
+                    value={nicheSearch}
+                    onChange={(e) => setNicheSearch(e.target.value)}
+                    className="pl-8 h-9 text-sm"
+                  />
+                </div>
+              </div>
+              {/* Niche list */}
+              <div className="max-h-[280px] overflow-y-auto p-2">
+                {/* All option */}
+                <button
+                  onClick={() => {
+                    onSponsorsNicheChange("");
+                    setNicheOpen(false);
+                    setNicheSearch("");
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-lg transition-all ${
+                    !sponsorsNiche
+                      ? "bg-[var(--accent)] text-white"
+                      : "hover:bg-[var(--surface-elevated)]"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-base">✨</span>
+                    <span className="font-medium">All Niches</span>
+                  </div>
+                  {!sponsorsNiche && <Check className="w-4 h-4" />}
+                </button>
+
+                {filteredNiches.length === 0 ? (
+                  <div className="px-3 py-6 text-center text-sm text-[var(--muted)]">
+                    No niches found
+                  </div>
+                ) : (
+                  filteredNiches.map((niche) => (
+                    <button
+                      key={niche}
+                      onClick={() => {
+                        onSponsorsNicheChange(niche === sponsorsNiche ? "" : niche);
+                        setNicheOpen(false);
+                        setNicheSearch("");
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-lg transition-all ${
+                        sponsorsNiche === niche
+                          ? "bg-[var(--accent)] text-white"
+                          : "hover:bg-[var(--surface-elevated)]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-base">{NICHE_ICONS[niche.toLowerCase()] || "🎯"}</span>
+                        <span className="font-medium capitalize">{niche}</span>
+                      </div>
+                      {sponsorsNiche === niche && <Check className="w-4 h-4" />}
+                    </button>
+                  ))
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+
+        {/* Has Website Toggle */}
+        <button
+          onClick={() => onHasWebsiteChange(!hasWebsite)}
+          className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl border transition-all ${
+            hasWebsite
+              ? "bg-[var(--accent)]/10 border-[var(--accent)] text-[var(--accent)]"
+              : "bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)]"
+          }`}
+        >
+          <Globe className="w-4 h-4" />
+          <span>Has Website</span>
+          {hasWebsite && <X className="w-3.5 h-3.5 ml-1 opacity-70" />}
+        </button>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Sort Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)] transition-all">
+              {SORT_OPTIONS.find(o => o.value === sort)?.icon}
+              <span>{SORT_OPTIONS.find(o => o.value === sort)?.label || "Sort"}</span>
+              <ChevronDown className="w-4 h-4 opacity-50" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[160px] p-2">
+            {SORT_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => onSortChange(option.value)}
+                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-all ${
+                  sort === option.value
+                    ? "bg-[var(--accent)] text-white"
+                    : "hover:bg-[var(--surface-elevated)]"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {option.icon}
+                  <span>{option.label}</span>
+                </div>
+                {sort === option.value && <Check className="w-4 h-4" />}
+              </button>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Active Filters Pills - Always visible when filters are active */}
-      {activeFilterCount > 0 && !isExpanded && (
-        <div className="flex items-center gap-2 mt-4 flex-wrap animate-fade-in">
+      {/* Active Filters Pills */}
+      {activeFilterCount > 0 && (
+        <div className="flex items-center gap-2 flex-wrap animate-fade-in">
           <span className="text-xs font-medium text-[var(--muted)]">Active:</span>
           {category && (
             <span className="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 text-xs font-medium bg-[var(--accent)]/10 text-[var(--accent)] rounded-full border border-[var(--accent)]/20">
-              <span>{CATEGORY_ICONS[category] || "📦"}</span>
-              {category}
+              <span>{CATEGORY_ICONS[category.toLowerCase()] || "📦"}</span>
+              <span className="capitalize">{category}</span>
               <button
                 onClick={() => onCategoryChange("")}
                 className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-[var(--accent)]/20 transition-colors"
@@ -457,47 +570,48 @@ export function DiscoveryFilters({
               </button>
             </span>
           )}
-          {followerRange && (
-            <span className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 text-xs font-medium bg-[var(--accent)]/10 text-[var(--accent)] rounded-full border border-[var(--accent)]/20">
-              {FOLLOWER_RANGES.find(r => r.value === followerRange)?.label}
-              <button
-                onClick={() => onFollowerRangeChange("")}
-                className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-[var(--accent)]/20 transition-colors"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-          {verifiedOnly && (
+          {activityLevel && (
             <span className="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 text-xs font-medium bg-[var(--accent)]/10 text-[var(--accent)] rounded-full border border-[var(--accent)]/20">
-              <BadgeCheck className="w-3 h-3" />
-              Verified
+              {ACTIVITY_OPTIONS.find(o => o.value === activityLevel)?.icon}
+              <span>{ACTIVITY_OPTIONS.find(o => o.value === activityLevel)?.label}</span>
               <button
-                onClick={() => onVerifiedOnlyChange?.(false)}
+                onClick={() => onActivityLevelChange("")}
                 className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-[var(--accent)]/20 transition-colors"
               >
                 <X className="w-3 h-3" />
               </button>
             </span>
           )}
-          {activeOnly && (
+          {creatorTier && (
             <span className="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 text-xs font-medium bg-[var(--accent)]/10 text-[var(--accent)] rounded-full border border-[var(--accent)]/20">
-              <Zap className="w-3 h-3" />
-              Active
+              <Users className="w-3 h-3" />
+              <span>{CREATOR_TIER_OPTIONS.find(t => t.value === creatorTier)?.label}</span>
               <button
-                onClick={() => onActiveOnlyChange?.(false)}
+                onClick={() => onCreatorTierChange("")}
                 className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-[var(--accent)]/20 transition-colors"
               >
                 <X className="w-3 h-3" />
               </button>
             </span>
           )}
-          {myNicheOnly && userNiche && (
+          {sponsorsNiche && (
             <span className="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 text-xs font-medium bg-[var(--accent)]/10 text-[var(--accent)] rounded-full border border-[var(--accent)]/20">
               <Sparkles className="w-3 h-3" />
-              {userNiche}
+              <span className="capitalize">{sponsorsNiche}</span>
               <button
-                onClick={() => onMyNicheOnlyChange?.(false)}
+                onClick={() => onSponsorsNicheChange("")}
+                className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-[var(--accent)]/20 transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {hasWebsite && (
+            <span className="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 text-xs font-medium bg-[var(--accent)]/10 text-[var(--accent)] rounded-full border border-[var(--accent)]/20">
+              <Globe className="w-3 h-3" />
+              <span>Has Website</span>
+              <button
+                onClick={() => onHasWebsiteChange(false)}
                 className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-[var(--accent)]/20 transition-colors"
               >
                 <X className="w-3 h-3" />

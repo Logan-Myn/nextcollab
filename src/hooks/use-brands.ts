@@ -4,20 +4,25 @@ import { useState, useEffect, useCallback } from "react";
 import { BrandData } from "@/components/brand-card";
 
 export type TabType = "all" | "forYou" | "saved";
-export type SortType = "matchScore" | "partnershipCount" | "followers" | "name";
+export type SortType = "matchScore" | "partnershipCount" | "rising" | "name";
 export type ViewMode = "grid" | "list";
+export type CreatorTier = "" | "nano" | "micro" | "mid" | "macro" | "mega";
 
 export interface BrandFilters {
   tab: TabType;
   search: string;
   category: string;
-  niche: string;
-  minFollowers: string;
-  maxFollowers: string;
-  activityLevel: string;
+  activityLevel: string; // "veryActive" | "active" | "rising" | ""
+  creatorTier: CreatorTier; // matches avg_creator_followers
+  sponsorsNiche: string; // matches typical_creator_niches
+  hasWebsite: boolean;
   sort: SortType;
   page: number;
-  verified?: boolean;
+}
+
+export interface CategoryCount {
+  name: string;
+  count: number;
 }
 
 export interface UseBrandsResult {
@@ -31,7 +36,8 @@ export interface UseBrandsResult {
     totalPages: number;
   };
   categories: string[];
-  niches: string[];
+  categoryCounts: CategoryCount[];
+  creatorNiches: string[];
   hasMore: boolean;
   loadMore: () => void;
   refetch: () => void;
@@ -59,7 +65,8 @@ export function useBrands(
     totalPages: 0,
   });
   const [categories, setCategories] = useState<string[]>([]);
-  const [niches, setNiches] = useState<string[]>([]);
+  const [categoryCounts, setCategoryCounts] = useState<CategoryCount[]>([]);
+  const [creatorNiches, setCreatorNiches] = useState<string[]>([]);
   const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
 
   const fetchBrands = useCallback(
@@ -116,16 +123,15 @@ export function useBrands(
 
           if (filters.search) params.set("search", filters.search);
           if (filters.category) params.set("category", filters.category);
-          if (filters.niche) params.set("niche", filters.niche);
-          if (filters.minFollowers) params.set("minFollowers", filters.minFollowers);
-          if (filters.maxFollowers) params.set("maxFollowers", filters.maxFollowers);
           if (filters.activityLevel) params.set("activityLevel", filters.activityLevel);
-          if (filters.verified) params.set("verified", "true");
+          if (filters.creatorTier) params.set("creatorTier", filters.creatorTier);
+          if (filters.sponsorsNiche) params.set("sponsorsNiche", filters.sponsorsNiche);
+          if (filters.hasWebsite) params.set("hasWebsite", "true");
 
           const sortMap: Record<SortType, string> = {
             matchScore: "partnershipCount",
             partnershipCount: "partnershipCount",
-            followers: "followers",
+            rising: "partnershipCount",
             name: "name",
           };
           params.set("sortBy", sortMap[filters.sort] || "partnershipCount");
@@ -143,7 +149,8 @@ export function useBrands(
 
           setPagination(json.pagination);
           setCategories(json.filters?.categories || []);
-          setNiches(json.filters?.niches || []);
+          setCategoryCounts(json.filters?.categoryCounts || []);
+          setCreatorNiches(json.filters?.creatorNiches || []);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
@@ -160,12 +167,11 @@ export function useBrands(
     filters.tab,
     filters.search,
     filters.category,
-    filters.niche,
-    filters.minFollowers,
-    filters.maxFollowers,
     filters.activityLevel,
+    filters.creatorTier,
+    filters.sponsorsNiche,
+    filters.hasWebsite,
     filters.sort,
-    filters.verified,
     userId,
   ]);
 
@@ -185,7 +191,8 @@ export function useBrands(
     error,
     pagination,
     categories,
-    niches,
+    categoryCounts,
+    creatorNiches,
     hasMore: pagination.page < pagination.totalPages,
     loadMore,
     refetch,

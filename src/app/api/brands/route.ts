@@ -16,11 +16,10 @@ export async function GET(request: NextRequest) {
     // Filters
     const search = searchParams.get("search");
     const category = searchParams.get("category");
-    const niche = searchParams.get("niche");
-    const minFollowers = searchParams.get("minFollowers");
-    const maxFollowers = searchParams.get("maxFollowers");
-    const verified = searchParams.get("verified");
     const activityLevel = searchParams.get("activityLevel");
+    const creatorTier = searchParams.get("creatorTier"); // nano, micro, mid, macro, mega
+    const sponsorsNiche = searchParams.get("sponsorsNiche"); // filter by typical_creator_niches
+    const hasWebsite = searchParams.get("hasWebsite");
     const sortBy = searchParams.get("sortBy") || "partnershipCount";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
@@ -41,20 +40,34 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(brand.category, category));
     }
 
-    if (niche) {
-      conditions.push(eq(brand.niche, niche));
+    // Creator tier match - filter by avg_creator_followers range
+    if (creatorTier) {
+      const tierRanges: Record<string, [number, number]> = {
+        nano: [0, 10000],
+        micro: [10000, 50000],
+        mid: [50000, 100000],
+        macro: [100000, 500000],
+        mega: [500000, Infinity],
+      };
+      const range = tierRanges[creatorTier];
+      if (range) {
+        conditions.push(gte(brand.avgCreatorFollowers, range[0]));
+        if (range[1] !== Infinity) {
+          conditions.push(lte(brand.avgCreatorFollowers, range[1]));
+        }
+      }
     }
 
-    if (minFollowers) {
-      conditions.push(gte(brand.followers, parseInt(minFollowers)));
+    // Sponsors niche - filter by typical_creator_niches JSONB array
+    if (sponsorsNiche) {
+      conditions.push(
+        sql`${brand.typicalCreatorNiches} @> ${JSON.stringify([sponsorsNiche])}::jsonb`
+      );
     }
 
-    if (maxFollowers) {
-      conditions.push(lte(brand.followers, parseInt(maxFollowers)));
-    }
-
-    if (verified === "true") {
-      conditions.push(eq(brand.isVerifiedAccount, true));
+    // Has website filter
+    if (hasWebsite === "true") {
+      conditions.push(eq(brand.hasWebsite, true));
     }
 
     // Activity level filter based on partnership count
@@ -62,11 +75,10 @@ export async function GET(request: NextRequest) {
       conditions.push(gte(brand.partnershipCount, 5));
     } else if (activityLevel === "active") {
       conditions.push(gte(brand.partnershipCount, 1));
-      conditions.push(lte(brand.partnershipCount, 4));
-    } else if (activityLevel === "quiet") {
-      conditions.push(
-        or(eq(brand.partnershipCount, 0), sql`${brand.partnershipCount} IS NULL`)
-      );
+    } else if (activityLevel === "rising") {
+      // Rising = 1-3 partnerships (new to sponsoring, less competition)
+      conditions.push(gte(brand.partnershipCount, 1));
+      conditions.push(lte(brand.partnershipCount, 3));
     }
 
     // Execute query
@@ -102,7 +114,11 @@ export async function GET(request: NextRequest) {
         bio: brand.bio,
         isVerifiedAccount: brand.isVerifiedAccount,
         websiteUrl: brand.websiteUrl,
+        hasWebsite: brand.hasWebsite,
         lastPartnershipAt: brand.lastPartnershipAt,
+        profilePicture: brand.profilePicture,
+        avgCreatorFollowers: brand.avgCreatorFollowers,
+        typicalCreatorNiches: brand.typicalCreatorNiches,
       })
       .from(brand)
       .where(whereClause)
@@ -119,14 +135,27 @@ export async function GET(request: NextRequest) {
       .map((c) => c.category)
       .filter(Boolean) as string[];
 
-    // Get unique niches for filters
-    const nichesResult = await db
-      .selectDistinct({ niche: brand.niche })
+    // Get unique creator niches from typical_creator_niches JSONB
+    const creatorNichesResult = await db
+      .select({
+        niche: sql<string>`jsonb_array_elements_text(${brand.typicalCreatorNiches})`,
+      })
       .from(brand)
-      .where(sql`${brand.niche} IS NOT NULL`);
-    const niches = nichesResult
-      .map((n) => n.niche)
-      .filter(Boolean) as string[];
+      .where(sql`${brand.typicalCreatorNiches} IS NOT NULL`);
+    const creatorNiches = [...new Set(
+      creatorNichesResult.map((n) => n.niche).filter(Boolean)
+    )] as string[];
+
+    // Get category counts for visual grid
+    const categoryCounts = await db
+      .select({
+        category: brand.category,
+        count: sql<number>`count(*)`,
+      })
+      .from(brand)
+      .where(sql`${brand.category} IS NOT NULL`)
+      .groupBy(brand.category)
+      .orderBy(sql`count(*) DESC`);
 
     return NextResponse.json({
       data: brands,
@@ -138,7 +167,11 @@ export async function GET(request: NextRequest) {
       },
       filters: {
         categories,
-        niches,
+        categoryCounts: categoryCounts.map(c => ({
+          name: c.category as string,
+          count: Number(c.count)
+        })),
+        creatorNiches,
       },
     });
   } catch (error) {
