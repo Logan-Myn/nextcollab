@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { TemplateSelector } from "../TemplateSelector";
-import { Plus, X, Sparkles, ArrowRight, FileText } from "lucide-react";
+import { Plus, X, Sparkles, FileText } from "lucide-react";
 import type { ToneType, LengthType, CreatorData, BrandData } from "@/lib/ai/pitch-prompts";
 import type { PitchTemplate } from "../hooks/useTemplates";
 
@@ -64,58 +64,32 @@ export function StepConfigure({
 
   return (
     <div className="space-y-6">
-      {/* Context Card - Who are you pitching? */}
+      {/* Context Card - Brand being pitched */}
       <BlurFade delay={0.05}>
         <div className="relative rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--accent-lighter)] p-5 overflow-hidden">
           {/* Subtle accent glow */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)] opacity-[0.03] blur-3xl rounded-full" />
 
-          <p className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-4">
+          <p className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-3">
             Pitching To
           </p>
 
-          <div className="flex items-center gap-4">
-            {/* Creator */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[var(--accent-light)] flex items-center justify-center shrink-0">
-                  <span className="text-sm font-semibold text-[var(--accent)]">
-                    {creator?.username?.charAt(0).toUpperCase() || "?"}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold truncate">
-                    @{creator?.username || "you"}
-                  </p>
-                  <p className="text-xs text-[var(--muted)] truncate">
-                    {formatNumber(creator?.followers)} followers
-                  </p>
-                </div>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-[var(--accent-light)] flex items-center justify-center shrink-0">
+              <span className="text-base font-semibold text-[var(--accent)]">
+                {brand?.name?.charAt(0).toUpperCase() || "?"}
+              </span>
             </div>
-
-            {/* Arrow */}
-            <div className="shrink-0 w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center shadow-lg shadow-[var(--accent)]/20">
-              <ArrowRight className="w-4 h-4 text-white" />
-            </div>
-
-            {/* Brand */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[var(--accent-secondary-light)] flex items-center justify-center shrink-0">
-                  <span className="text-sm font-semibold text-[var(--accent-secondary)]">
-                    {brand?.name?.charAt(0).toUpperCase() || "?"}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold truncate">
-                    {brand?.name || "Brand"}
-                  </p>
-                  <p className="text-xs text-[var(--muted)] truncate">
-                    {brand?.category || brand?.niche || "Brand"}
-                  </p>
-                </div>
-              </div>
+            <div className="min-w-0">
+              <p className="text-lg font-semibold truncate">
+                {brand?.name || "Brand"}
+              </p>
+              <p className="text-sm text-[var(--muted)] truncate">
+                {brand?.category || brand?.niche || "Brand"}
+                {brand?.followers && (
+                  <span className="ml-1">· {formatNumber(brand.followers)} followers</span>
+                )}
+              </p>
             </div>
           </div>
         </div>
