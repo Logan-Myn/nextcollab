@@ -28,6 +28,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { BlurFade } from "@/components/ui/blur-fade";
+import { PitchWizard } from "@/components/pitch/PitchWizard";
+import type { CreatorData, BrandData } from "@/lib/ai/pitch-prompts";
 
 interface Collab {
   creatorUsername: string | null;
@@ -149,6 +151,7 @@ export default function BrandDetailPage() {
   const [matchScore, setMatchScore] = useState<number | null>(null);
   const [matchReasons, setMatchReasons] = useState<string[]>([]);
   const [statsRevealed, setStatsRevealed] = useState(false);
+  const [pitchWizardOpen, setPitchWizardOpen] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -382,14 +385,12 @@ export default function BrandDetailPage() {
                     <Share2 className="w-4 h-4" />
                   </Button>
                   <Button
-                    disabled
                     size="sm"
-                    className="opacity-60 cursor-not-allowed"
-                    title="Coming soon"
+                    onClick={() => setPitchWizardOpen(true)}
+                    className="bg-[var(--accent)] hover:bg-[var(--accent-dark)]"
                   >
                     <MessageSquare className="w-4 h-4" />
                     <span className="hidden sm:inline">Pitch</span>
-                    <span className="text-[9px] opacity-70">Soon</span>
                   </Button>
                 </div>
               </div>
@@ -750,6 +751,32 @@ export default function BrandDetailPage() {
             </Button>
           </div>
         </div>
+      )}
+
+      {/* Pitch Wizard */}
+      {brand && session?.user?.id && (
+        <PitchWizard
+          open={pitchWizardOpen}
+          onOpenChange={setPitchWizardOpen}
+          creator={profile ? {
+            username: profile.instagramUsername || "",
+            followers: profile.followers,
+            engagementRate: profile.engagementRate,
+            niche: profile.niche,
+          } : null}
+          brand={{
+            name: brand.name,
+            instagramUsername: brand.instagramUsername,
+            category: brand.category,
+            niche: brand.niche,
+            typicalCreatorNiches: brand.typicalCreatorNiches,
+            bio: brand.bio,
+            followers: brand.followers,
+            avgCreatorFollowers: brand.stats.avgCreatorFollowers,
+          }}
+          brandId={brand.id}
+          userId={session.user.id}
+        />
       )}
     </DashboardShell>
   );

@@ -209,6 +209,23 @@ export const savedSearch = pgTable("saved_search", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Pitch templates (saved by users)
+export const pitchTemplate = pgTable("pitch_template", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  tone: text("tone").default("professional"),
+  category: text("category"),
+  isFavorite: boolean("is_favorite").default(false),
+  usageCount: integer("usage_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Partnership tracker (CRM-lite) - Phase 2
 export const outreach = pgTable("outreach", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -220,6 +237,10 @@ export const outreach = pgTable("outreach", {
     .references(() => brand.id, { onDelete: "cascade" }),
   status: text("status").notNull().default("pitched"),
   notes: text("notes"),
+  pitchSubject: text("pitch_subject"),
+  pitchBody: text("pitch_body"),
+  pitchTone: text("pitch_tone"),
+  templateId: uuid("template_id").references(() => pitchTemplate.id, { onDelete: "set null" }),
   pitchedAt: timestamp("pitched_at"),
   confirmedAt: timestamp("confirmed_at"),
   paidAt: timestamp("paid_at"),
