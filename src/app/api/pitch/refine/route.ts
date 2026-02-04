@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { anthropic } from "@ai-sdk/anthropic";
-import { streamText, type CoreMessage } from "ai";
+import { streamText } from "ai";
 import {
   buildRefineSystemPrompt,
   type CreatorData,
   type BrandData,
 } from "@/lib/ai/pitch-prompts";
+
+type CoreMessage = {
+  role: "user" | "assistant" | "system";
+  content: string;
+};
 
 interface UIMessagePart {
   type: string;
