@@ -17,6 +17,8 @@ import {
 import { useState, useEffect, useCallback } from "react";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { BrandCard, BrandCardCompact, BrandData } from "@/components/brand-card";
+import { useFavorites } from "@/hooks/use-favorites";
+import { useOutreach } from "@/hooks/use-outreach";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { NumberTicker } from "@/components/ui/number-ticker";
@@ -62,6 +64,10 @@ export default function DashboardPage() {
   const [matches, setMatches] = useState<BrandData[]>([]);
   const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
   const [matchesLoading, setMatchesLoading] = useState(false);
+
+  // Pipeline data
+  const { count: savedCount, toggleSave, isSaved, isSaving } = useFavorites(session?.user?.id);
+  const { stats: outreachStats } = useOutreach(session?.user?.id);
 
   const fetchProfile = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -259,6 +265,9 @@ export default function DashboardPage() {
                     key={brand.id}
                     brand={brand}
                     showMatchScore={true}
+                    isSaved={isSaved(brand.id)}
+                    isSaving={isSaving(brand.id)}
+                    onSave={toggleSave}
                     index={index}
                   />
                 ))}
@@ -301,10 +310,10 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-4 gap-2 text-center mb-4">
                   {[
-                    { label: "Saved", count: 0, color: "var(--muted)" },
-                    { label: "Pitched", count: 0, color: "var(--accent-secondary)" },
-                    { label: "Talking", count: 0, color: "var(--warning)" },
-                    { label: "Won", count: 0, color: "var(--success)" },
+                    { label: "Saved", count: savedCount, color: "var(--muted)" },
+                    { label: "Pitched", count: outreachStats.pitched, color: "var(--accent-secondary)" },
+                    { label: "Talking", count: outreachStats.negotiating, color: "var(--warning)" },
+                    { label: "Won", count: outreachStats.completed, color: "var(--success)" },
                   ].map((stage) => (
                     <div
                       key={stage.label}
@@ -314,7 +323,7 @@ export default function DashboardPage() {
                         className="text-lg font-bold mb-0.5"
                         style={{ color: stage.color }}
                       >
-                        {stage.count}
+                        <NumberTicker value={stage.count} />
                       </p>
                       <p className="text-[10px] font-medium text-muted-foreground">{stage.label}</p>
                     </div>
@@ -356,7 +365,14 @@ export default function DashboardPage() {
                 {matches.length > 0 ? (
                   <div className="space-y-2">
                     {matches.slice(0, 4).map((brand, index) => (
-                      <BrandCardCompact key={brand.id} brand={brand} index={index} />
+                      <BrandCardCompact
+                        key={brand.id}
+                        brand={brand}
+                        index={index}
+                        isSaved={isSaved(brand.id)}
+                        isSaving={isSaving(brand.id)}
+                        onSave={toggleSave}
+                      />
                     ))}
                   </div>
                 ) : (

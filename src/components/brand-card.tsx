@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, ExternalLink, TrendingUp, Users } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -28,6 +27,7 @@ interface BrandCardProps {
   brand: BrandData;
   onSave?: (brandId: string) => void;
   isSaved?: boolean;
+  isSaving?: boolean;
   showMatchScore?: boolean;
   index?: number;
 }
@@ -70,19 +70,24 @@ export function BrandCard({
   brand,
   onSave,
   isSaved = false,
+  isSaving = false,
   showMatchScore = true,
   index = 0,
 }: BrandCardProps) {
-  const [saved, setSaved] = useState(isSaved);
   const activity = getActivityLevel(brand.activityScore, brand.partnershipCount);
   const matchScore = brand.matchScore || 0;
   const matchClass = getMatchClass(matchScore);
 
-  const handleSave = (e: React.MouseEvent) => {
+  const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setSaved(!saved);
-    onSave?.(brand.id);
+    if (onSave) {
+      try {
+        await onSave(brand.id);
+      } catch (err) {
+        console.error("[BrandCard] Save error:", err);
+      }
+    }
   };
 
   const animationDelay = `${index * 50}ms`;
@@ -218,10 +223,11 @@ export function BrandCard({
             variant="ghost"
             size="icon-sm"
             onClick={handleSave}
-            className={saved ? "text-primary bg-[var(--accent-light)]" : ""}
-            title={saved ? "Remove from saved" : "Save brand"}
+            disabled={isSaving}
+            className={isSaved ? "text-primary bg-[var(--accent-light)]" : ""}
+            title={isSaved ? "Remove from saved" : "Save brand"}
           >
-            <Heart className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
+            <Heart className={`w-4 h-4 ${isSaved ? "fill-current" : ""} ${isSaving ? "animate-pulse" : ""}`} />
           </Button>
           <Button variant="outline" size="sm" className="flex-1 text-xs">
             View Details
@@ -255,18 +261,23 @@ export function BrandCardCompact({
   brand,
   onSave,
   isSaved = false,
+  isSaving = false,
   index = 0,
 }: Omit<BrandCardProps, "showMatchScore">) {
-  const [saved, setSaved] = useState(isSaved);
   const activity = getActivityLevel(brand.activityScore, brand.partnershipCount);
   const matchScore = brand.matchScore || 0;
   const matchClass = getMatchClass(matchScore);
 
-  const handleSave = (e: React.MouseEvent) => {
+  const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setSaved(!saved);
-    onSave?.(brand.id);
+    if (onSave) {
+      try {
+        await onSave(brand.id);
+      } catch (err) {
+        console.error("[BrandCard] Save error:", err);
+      }
+    }
   };
 
   return (
@@ -333,9 +344,10 @@ export function BrandCardCompact({
         variant="ghost"
         size="icon-sm"
         onClick={handleSave}
-        className={saved ? "text-primary" : ""}
+        disabled={isSaving}
+        className={isSaved ? "text-primary" : ""}
       >
-        <Heart className={`w-3.5 h-3.5 ${saved ? "fill-current" : ""}`} />
+        <Heart className={`w-3.5 h-3.5 ${isSaved ? "fill-current" : ""} ${isSaving ? "animate-pulse" : ""}`} />
       </Button>
     </Link>
   );

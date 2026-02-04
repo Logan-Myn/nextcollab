@@ -23,6 +23,7 @@ import {
   Building2,
 } from "lucide-react";
 import { ActivityChart } from "@/components/brand/ActivityChart";
+import { useFavorites } from "@/hooks/use-favorites";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -146,8 +147,10 @@ export default function BrandDetailPage() {
   const [profile, setProfile] = useState<CreatorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+
+  // Favorites hook for save functionality
+  const { isSaved, isSaving, toggleSave } = useFavorites(session?.user?.id);
   const [matchScore, setMatchScore] = useState<number | null>(null);
   const [matchReasons, setMatchReasons] = useState<string[]>([]);
   const [statsRevealed, setStatsRevealed] = useState(false);
@@ -250,8 +253,14 @@ export default function BrandDetailPage() {
     fetchBrand();
   }, [fetchProfile, fetchBrand]);
 
-  const handleSave = () => {
-    setSaved(!saved);
+  const handleSave = async () => {
+    if (brand) {
+      try {
+        await toggleSave(brand.id);
+      } catch (err) {
+        console.error("[BrandDetail] Save error:", err);
+      }
+    }
   };
 
   const handleShare = async () => {
@@ -361,10 +370,11 @@ export default function BrandDetailPage() {
                     variant="ghost"
                     size="icon-sm"
                     onClick={handleSave}
-                    className={saved ? "text-primary" : ""}
-                    title={saved ? "Saved" : "Save"}
+                    disabled={isSaving(brand.id)}
+                    className={isSaved(brand.id) ? "text-primary" : ""}
+                    title={isSaved(brand.id) ? "Saved" : "Save"}
                   >
-                    <Heart className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
+                    <Heart className={`w-4 h-4 ${isSaved(brand.id) ? "fill-current" : ""} ${isSaving(brand.id) ? "animate-pulse" : ""}`} />
                   </Button>
                   <Button
                     variant="ghost"

@@ -79,7 +79,28 @@ export function useBrands(
       try {
         const currentPage = append ? filters.page : 1;
 
-        if (filters.tab === "forYou" && userId) {
+        if (filters.tab === "saved" && userId) {
+          // Fetch saved brands from favorites API
+          const res = await fetch(
+            `/api/favorites?userId=${encodeURIComponent(userId)}&page=${currentPage}&limit=20`
+          );
+          if (!res.ok) throw new Error("Failed to fetch saved brands");
+          const json = await res.json();
+
+          // Extract brands from favorite records
+          const savedBrands = json.data.map((f: { brand: BrandData }) => f.brand);
+
+          if (append) {
+            setBrands((prev) => [...prev, ...savedBrands]);
+          } else {
+            setBrands(savedBrands);
+          }
+
+          setPagination(json.pagination);
+          setCategories([]);
+          setCategoryCounts([]);
+          setCreatorNiches([]);
+        } else if (filters.tab === "forYou" && userId) {
           const res = await fetch(
             `/api/brands/matches?userId=${encodeURIComponent(userId)}`
           );

@@ -9,6 +9,7 @@ import { BrandCard, BrandCardCompact } from "@/components/brand-card";
 import { DiscoveryFilters } from "@/components/brand/discovery-filters";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useBrands, TabType, SortType, ViewMode, BrandFilters, CreatorTier } from "@/hooks/use-brands";
+import { useFavorites } from "@/hooks/use-favorites";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -105,7 +106,11 @@ export default function BrandDiscoveryPage() {
     creatorNiches,
     hasMore,
     loadMore,
+    refetch,
   } = useBrands(filters, session?.user?.id);
+
+  // Favorites functionality
+  const { toggleSave, isSaved, isSaving } = useFavorites(session?.user?.id);
 
   // Update URL when filters change
   useEffect(() => {
@@ -521,6 +526,9 @@ export default function BrandDiscoveryPage() {
                   key={brand.id}
                   brand={brand}
                   showMatchScore={filters.tab === "forYou" || (brand.matchScore || 0) > 0}
+                  isSaved={isSaved(brand.id)}
+                  isSaving={isSaving(brand.id)}
+                  onSave={toggleSave}
                   index={index}
                 />
               ))}
@@ -528,7 +536,14 @@ export default function BrandDiscoveryPage() {
           ) : (
             <div className="space-y-2">
               {brands.map((brand, index) => (
-                <BrandCardCompact key={brand.id} brand={brand} index={index} />
+                <BrandCardCompact
+                  key={brand.id}
+                  brand={brand}
+                  index={index}
+                  isSaved={isSaved(brand.id)}
+                  isSaving={isSaving(brand.id)}
+                  onSave={toggleSave}
+                />
               ))}
             </div>
           )}
