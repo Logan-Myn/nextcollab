@@ -773,6 +773,8 @@ export default function BrandDetailPage() {
             bio: brand.bio,
             followers: brand.followers,
             avgCreatorFollowers: brand.stats.avgCreatorFollowers,
+            profilePicture: brand.profilePicture,
+            isVerifiedAccount: brand.isVerifiedAccount,
           }}
           brandId={brand.id}
           userId={session.user.id}

@@ -18,6 +18,8 @@ export interface BrandData {
   bio: string | null;
   followers: number | null;
   avgCreatorFollowers?: number | null;
+  profilePicture?: string | null;
+  isVerifiedAccount?: boolean | null;
 }
 
 export interface PitchGenerationParams {
