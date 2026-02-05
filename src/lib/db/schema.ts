@@ -85,6 +85,22 @@ export const creatorProfile = pgTable("creator_profile", {
   instagramConnected: boolean("instagram_connected").default(false),
   connectedAt: timestamp("connected_at"),
   lastSyncedAt: timestamp("last_synced_at"),
+  // Enriched metrics (from post analysis)
+  avgViews: integer("avg_views"),
+  avgLikes: integer("avg_likes"),
+  avgComments: integer("avg_comments"),
+  postFrequency: decimal("post_frequency", { precision: 3, scale: 1 }),
+  viewToFollowerRatio: decimal("view_to_follower_ratio", { precision: 5, scale: 2 }),
+  contentThemes: jsonb("content_themes"),
+  subNiches: jsonb("sub_niches"),
+  postTypeMix: jsonb("post_type_mix"),
+  primaryLanguage: text("primary_language"),
+  locationDisplay: text("location_display"),
+  countryCode: text("country_code"),
+  hasMediaKit: boolean("has_media_kit").default(false),
+  postsAnalyzed: integer("posts_analyzed"),
+  enrichedAt: timestamp("enriched_at"),
+  enrichmentVersion: integer("enrichment_version"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -117,6 +133,14 @@ export const brand = pgTable("brand", {
   avgCreatorFollowers: integer("avg_creator_followers"),
   preferredPostTypes: jsonb("preferred_post_types"),
   profilePicture: text("profile_picture"),
+  // Fit analysis aggregates (from enriched partner data)
+  minCreatorFollowers: integer("min_creator_followers"),
+  creatorRegions: jsonb("creator_regions"),
+  contentThemes: jsonb("content_themes"),
+  avgPartnerEngagement: decimal("avg_partner_engagement", { precision: 5, scale: 2 }),
+  avgPartnerViews: integer("avg_partner_views"),
+  firstPartnershipAt: timestamp("first_partnership_at"),
+  sponsorshipFrequency: decimal("sponsorship_frequency", { precision: 5, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -141,29 +165,55 @@ export const discoveredCreator = pgTable("discovered_creator", {
   classificationConfidence: integer("classification_confidence"),
   classifiedAt: timestamp("classified_at"),
   classifiedBy: text("classified_by"), // 'ai', 'heuristic', 'manual'
+  // Enriched metrics (from post analysis)
+  avgViews: integer("avg_views"),
+  avgLikes: integer("avg_likes"),
+  avgComments: integer("avg_comments"),
+  engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }),
+  postFrequency: decimal("post_frequency", { precision: 3, scale: 1 }),
+  viewToFollowerRatio: decimal("view_to_follower_ratio", { precision: 5, scale: 2 }),
+  contentThemes: jsonb("content_themes"),
+  subNiches: jsonb("sub_niches"),
+  postTypeMix: jsonb("post_type_mix"),
+  primaryLanguage: text("primary_language"),
+  locationDisplay: text("location_display"),
+  countryCode: text("country_code"),
+  postsAnalyzed: integer("posts_analyzed"),
+  enrichedAt: timestamp("enriched_at"),
+  enrichmentVersion: integer("enrichment_version"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   lastScrapedAt: timestamp("last_scraped_at"),
 });
 
 // Detected partnerships (scraped from Instagram)
-export const partnership = pgTable("partnership", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  brandId: uuid("brand_id")
-    .notNull()
-    .references(() => brand.id, { onDelete: "cascade" }),
-  discoveredCreatorId: uuid("discovered_creator_id")
-    .references(() => discoveredCreator.id, { onDelete: "set null" }),
-  creatorInstagramId: text("creator_instagram_id"),
-  creatorUsername: text("creator_username"),
-  creatorNiche: text("creator_niche"),
-  creatorFollowers: integer("creator_followers"),
-  postUrl: text("post_url"),
-  postType: text("post_type"),
-  engagement: integer("engagement"),
-  displayUrl: text("display_url"),
-  detectedAt: timestamp("detected_at").defaultNow().notNull(),
-});
+export const partnership = pgTable(
+  "partnership",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    brandId: uuid("brand_id")
+      .notNull()
+      .references(() => brand.id, { onDelete: "cascade" }),
+    discoveredCreatorId: uuid("discovered_creator_id")
+      .references(() => discoveredCreator.id, { onDelete: "set null" }),
+    creatorInstagramId: text("creator_instagram_id"),
+    creatorUsername: text("creator_username"),
+    creatorNiche: text("creator_niche"),
+    creatorFollowers: integer("creator_followers"),
+    postUrl: text("post_url"),
+    postType: text("post_type"),
+    engagement: integer("engagement"),
+    displayUrl: text("display_url"),
+    // Enriched post metrics
+    views: integer("views"),
+    likes: integer("likes"),
+    commentsCount: integer("comments_count"),
+    caption: text("caption"),
+    creatorLocation: text("creator_location"),
+    detectedAt: timestamp("detected_at").defaultNow().notNull(),
+  },
+  (table) => [unique("partnership_post_url_unique").on(table.postUrl)]
+);
 
 // User favorites
 export const favorite = pgTable(

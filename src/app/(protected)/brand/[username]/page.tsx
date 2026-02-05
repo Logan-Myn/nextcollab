@@ -25,6 +25,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { ActivityChart } from "@/components/brand/ActivityChart";
+import { FitAnalysisCard } from "@/components/brand/FitAnalysisCard";
 import { useFavorites } from "@/hooks/use-favorites";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -497,7 +498,7 @@ export default function BrandDetailPage() {
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {brand.latestPosts.map((post, index) => (
-                          <BlurFade key={post.postUrl || index} delay={0.05 * index}>
+                          <BlurFade key={index} delay={0.05 * index}>
                             <a
                               href={post.postUrl || "#"}
                               target="_blank"
@@ -716,68 +717,12 @@ export default function BrandDetailPage() {
               </div>
             )}
 
-            {activeTab === "fit" && (
-              <div className="bg-[var(--surface)] rounded-xl shadow-md p-6">
-                <div className="flex items-center gap-4 mb-6">
-                  <div
-                    className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${
-                      matchScore && matchScore >= 85
-                        ? "bg-[var(--success)]/10 text-[var(--success)]"
-                        : matchScore && matchScore >= 70
-                          ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                          : "bg-[var(--warning)]/10 text-[var(--warning)]"
-                    }`}
-                  >
-                    {matchScore || 0}%
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">
-                      {matchScore && matchScore >= 85
-                        ? "Excellent Match"
-                        : matchScore && matchScore >= 70
-                          ? "Strong Match"
-                          : "Potential Match"}
-                    </h3>
-                    <p className="text-sm text-[var(--muted)]">
-                      Based on your profile and their partnership history
-                    </p>
-                  </div>
-                </div>
-
-                {/* Match Reasons */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Why you match</h4>
-                  {matchReasons.map((reason, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-[var(--surface-elevated)]">
-                      <CheckCircle2 className="w-5 h-5 text-[var(--success)] shrink-0 mt-0.5" />
-                      <span>{reason}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Quick Stats Comparison */}
-                {profile && (
-                  <div className="mt-6 pt-6 border-t border-[var(--border)]">
-                    <h4 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-4">Your Profile vs Their Partners</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 rounded-lg bg-[var(--surface-elevated)]">
-                        <span className="text-xs text-[var(--muted)]">Your Followers</span>
-                        <p className="text-xl font-bold">{formatNumber(profile.followers)}</p>
-                        <span className="text-xs text-[var(--muted)]">
-                          {getFollowerTier(profile.followers || 0)} creator
-                        </span>
-                      </div>
-                      <div className="p-4 rounded-lg bg-[var(--surface-elevated)]">
-                        <span className="text-xs text-[var(--muted)]">Their Avg Partner</span>
-                        <p className="text-xl font-bold">{formatNumber(brand.stats.avgCreatorFollowers)}</p>
-                        <span className="text-xs text-[var(--muted)]">
-                          {getFollowerTier(brand.stats.avgCreatorFollowers || 0)} creators
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+            {activeTab === "fit" && session?.user?.id && (
+              <FitAnalysisCard
+                brandId={brand.id}
+                userId={session.user.id}
+                basicMatchScore={matchScore ?? undefined}
+              />
             )}
           </section>
 
