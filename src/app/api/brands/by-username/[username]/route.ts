@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { brand, partnership, discoveredCreator } from "@/lib/db/schema";
-import { eq, desc, and, ne, isNotNull, isNull, or, sql, count, countDistinct, avg } from "drizzle-orm";
+import { eq, desc, and, ne, isNotNull, sql, count, countDistinct, avg } from "drizzle-orm";
 
 export async function GET(
   request: NextRequest,
@@ -55,6 +55,25 @@ export async function GET(
       .groupBy(partnership.creatorUsername)
       .orderBy(sql`MAX(${partnership.detectedAt}) DESC`)
       .limit(30);
+
+    // Get latest posts with images for preview section
+    const latestPosts = await db
+      .select({
+        postUrl: partnership.postUrl,
+        displayUrl: partnership.displayUrl,
+        postType: partnership.postType,
+        creatorUsername: partnership.creatorUsername,
+        detectedAt: partnership.detectedAt,
+      })
+      .from(partnership)
+      .where(
+        and(
+          eq(partnership.brandId, brandData.id),
+          isNotNull(partnership.displayUrl)
+        )
+      )
+      .orderBy(desc(partnership.detectedAt))
+      .limit(4);
 
     // Fetch creator details for each aggregated creator
     const creatorUsernames = aggregatedCreators
@@ -147,6 +166,7 @@ export async function GET(
         },
         collabs, // Aggregated by unique creator
         similarBrands,
+        latestPosts,
       },
     });
   } catch (error) {

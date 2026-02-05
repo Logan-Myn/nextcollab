@@ -21,6 +21,8 @@ import {
   Handshake,
   Target,
   Building2,
+  Play,
+  ImageIcon,
 } from "lucide-react";
 import { ActivityChart } from "@/components/brand/ActivityChart";
 import { useFavorites } from "@/hooks/use-favorites";
@@ -85,7 +87,8 @@ interface BrandDetail {
   preferredPostTypes: string[] | null;
   contentPreference: string | null;
   profilePicture: string | null;
-  updatedAt: string | null;
+  lastPartnershipAt: string | null;
+  lastScrapedAt: string | null;
   stats: {
     totalCollabs: number;
     uniqueCreators: number;
@@ -94,6 +97,13 @@ interface BrandDetail {
   };
   collabs: Collab[];
   similarBrands: SimilarBrand[];
+  latestPosts: Array<{
+    postUrl: string | null;
+    displayUrl: string | null;
+    postType: string | null;
+    creatorUsername: string | null;
+    detectedAt: string | null;
+  }>;
 }
 
 interface CreatorProfile {
@@ -441,9 +451,9 @@ export default function BrandDetailPage() {
               </button>
             ))}
             </div>
-            {brand.updatedAt && (
+            {brand.lastScrapedAt && (
               <span className="text-xs text-[var(--muted)] shrink-0">
-                Last update: {timeAgo(brand.updatedAt)}
+                Last update: {timeAgo(brand.lastScrapedAt)}
               </span>
             )}
           </div>
@@ -468,6 +478,81 @@ export default function BrandDetailPage() {
 
                 {/* Activity Chart */}
                 <ActivityChart brandId={brand.id} />
+
+                {/* Latest Sponsored Posts */}
+                {brand.latestPosts && brand.latestPosts.length > 0 && (
+                  <BlurFade delay={0.15}>
+                    <Card className="p-5 overflow-hidden">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                          Latest Sponsored Posts
+                        </h3>
+                        <button
+                          onClick={() => setActiveTab("collabs")}
+                          className="text-xs text-[var(--accent)] hover:text-[var(--accent-dark)] font-medium flex items-center gap-1 transition-colors"
+                        >
+                          View all
+                          <ChevronRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {brand.latestPosts.map((post, index) => (
+                          <BlurFade key={post.postUrl || index} delay={0.05 * index}>
+                            <a
+                              href={post.postUrl || "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group relative aspect-square rounded-xl overflow-hidden bg-[var(--surface-elevated)] block"
+                            >
+                              {post.displayUrl ? (
+                                <Image
+                                  src={post.displayUrl}
+                                  alt={`Sponsored post by @${post.creatorUsername}`}
+                                  fill
+                                  unoptimized
+                                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <ImageIcon className="w-8 h-8 text-[var(--muted)]" />
+                                </div>
+                              )}
+
+                              {/* Gradient overlay on hover */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                              {/* Post type badge */}
+                              <div className="absolute top-2 right-2">
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-black/60 text-white border-0 text-[10px] px-1.5 py-0.5 backdrop-blur-sm"
+                                >
+                                  {post.postType === "reel" ? (
+                                    <Play className="w-2.5 h-2.5 mr-0.5 fill-current" />
+                                  ) : null}
+                                  {post.postType || "post"}
+                                </Badge>
+                              </div>
+
+                              {/* Creator info on hover */}
+                              <div className="absolute bottom-0 left-0 right-0 p-2.5 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                                <p className="text-white text-xs font-medium truncate">
+                                  @{post.creatorUsername}
+                                </p>
+                                <p className="text-white/70 text-[10px]">
+                                  {timeAgo(post.detectedAt)}
+                                </p>
+                              </div>
+
+                              {/* Shine effect on hover */}
+                              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                            </a>
+                          </BlurFade>
+                        ))}
+                      </div>
+                    </Card>
+                  </BlurFade>
+                )}
 
                 {/* Bio */}
                 {brand.bio && (

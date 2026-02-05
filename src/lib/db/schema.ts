@@ -100,6 +100,7 @@ export const brand = pgTable("brand", {
   typicalFollowerMax: integer("typical_follower_max"),
   partnershipCount: integer("partnership_count").default(0),
   lastPartnershipAt: timestamp("last_partnership_at"),
+  lastScrapedAt: timestamp("last_scraped_at"),
   contentPreference: text("content_preference"),
   location: text("location"),
   bio: text("bio"),
@@ -142,6 +143,7 @@ export const discoveredCreator = pgTable("discovered_creator", {
   classifiedBy: text("classified_by"), // 'ai', 'heuristic', 'manual'
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastScrapedAt: timestamp("last_scraped_at"),
 });
 
 // Detected partnerships (scraped from Instagram)
@@ -159,6 +161,7 @@ export const partnership = pgTable("partnership", {
   postUrl: text("post_url"),
   postType: text("post_type"),
   engagement: integer("engagement"),
+  displayUrl: text("display_url"),
   detectedAt: timestamp("detected_at").defaultNow().notNull(),
 });
 
