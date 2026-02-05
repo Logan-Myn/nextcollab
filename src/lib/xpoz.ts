@@ -34,7 +34,7 @@ export async function fetchInstagramProfile(
     `${XPOZ_SERVICE_URL}/profile/${encodeURIComponent(username)}`,
     {
       headers: { "x-api-key": XPOZ_SERVICE_KEY },
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(60000), // 60s - backend does profile + posts + analysis
     }
   );
 
