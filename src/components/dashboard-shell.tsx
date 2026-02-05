@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "@/lib/auth-client";
 import {
-  Sparkles,
+  Home,
   Search,
   Kanban,
   Heart,
@@ -47,7 +47,7 @@ interface DashboardShellProps {
 }
 
 const navItems = [
-  { href: "/dashboard", icon: Sparkles, label: "For You" },
+  { href: "/dashboard", icon: Home, label: "Home" },
   { href: "/brand", icon: Search, label: "Brands" },
   { href: "/dashboard/pipeline", icon: Kanban, label: "Pipeline" },
   { href: "/dashboard/saved", icon: Heart, label: "Saved" },
@@ -95,7 +95,7 @@ export function DashboardShell({
   // Get current page title
   const getCurrentPageTitle = () => {
     const current = navItems.find(item => isActive(item.href));
-    return current?.label || "Dashboard";
+    return current?.label || "Home";
   };
 
   return (

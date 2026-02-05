@@ -6,23 +6,24 @@ import {
   Sparkles,
   TrendingUp,
   ArrowRight,
-  Users,
-  Target,
-  Zap,
   Instagram,
   Loader2,
   ChevronRight,
-  Kanban,
+  HeartHandshake,
+  Clock,
+  MessageSquare,
+  Rocket,
+  Trophy,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { BrandCard, BrandCardCompact, BrandData } from "@/components/brand-card";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useOutreach } from "@/hooks/use-outreach";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { NumberTicker } from "@/components/ui/number-ticker";
+import { Card } from "@/components/ui/card";
 import { BlurFade } from "@/components/ui/blur-fade";
+import type { LucideIcon } from "lucide-react";
 
 interface CreatorProfile {
   id: string;
@@ -43,18 +44,113 @@ interface MatchStats {
   creatorFollowers: number | null;
 }
 
-function formatNumber(n: number): string {
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-  return String(n);
+interface Nudge {
+  id: string;
+  icon: LucideIcon;
+  text: string;
+  href?: string;
+  cta?: string;
+  colorClass: string;
+  iconBg: string;
 }
 
-function getCreatorTier(followers: number): string {
-  if (followers >= 1000000) return "Mega";
-  if (followers >= 100000) return "Macro";
-  if (followers >= 10000) return "Mid-tier";
-  if (followers >= 1000) return "Micro";
-  return "Nano";
+function generateNudges(
+  savedBrandIds: Set<string>,
+  outreachRecords: { brandId: string; status: string; pitchedAt: string | null; brand?: BrandData }[],
+  outreachStats: Record<string, number>,
+  matchStats: MatchStats | null
+): Nudge[] {
+  const nudges: Nudge[] = [];
+  const outreachBrandIds = new Set(outreachRecords.map((r) => r.brandId));
+
+  // 1. Stale pitch (highest priority)
+  const stalePitches = outreachRecords.filter((r) => {
+    if (r.status !== "pitched" || !r.pitchedAt) return false;
+    const daysSince = (Date.now() - new Date(r.pitchedAt).getTime()) / (1000 * 60 * 60 * 24);
+    return daysSince > 3;
+  });
+  if (stalePitches.length > 0) {
+    const stale = stalePitches[0];
+    const days = Math.floor((Date.now() - new Date(stale.pitchedAt!).getTime()) / (1000 * 60 * 60 * 24));
+    const brandName = stale.brand?.instagramUsername
+      ? `@${stale.brand.instagramUsername}`
+      : "A brand";
+    nudges.push({
+      id: "stale-pitch",
+      icon: Clock,
+      text: `${brandName} hasn't responded in ${days} days`,
+      href: "/dashboard/pipeline",
+      cta: "Check pipeline",
+      colorClass: "text-amber-600 dark:text-amber-400",
+      iconBg: "bg-amber-100 dark:bg-amber-950/50",
+    });
+  }
+
+  // 2. Saved not pitched
+  const savedNotPitched = Array.from(savedBrandIds).filter((id) => !outreachBrandIds.has(id));
+  if (savedNotPitched.length > 0) {
+    nudges.push({
+      id: "saved-not-pitched",
+      icon: HeartHandshake,
+      text: `You saved ${savedNotPitched.length} brand${savedNotPitched.length > 1 ? "s" : ""} — ready to pitch?`,
+      href: "/dashboard/saved",
+      cta: "View saved",
+      colorClass: "text-[var(--accent)]",
+      iconBg: "bg-[var(--accent-light)]",
+    });
+  }
+
+  // 3. Active negotiations
+  if (outreachStats.negotiating > 0) {
+    nudges.push({
+      id: "negotiations",
+      icon: MessageSquare,
+      text: `${outreachStats.negotiating} active negotiation${outreachStats.negotiating > 1 ? "s" : ""}`,
+      href: "/dashboard/pipeline",
+      cta: "View pipeline",
+      colorClass: "text-blue-600 dark:text-blue-400",
+      iconBg: "bg-blue-100 dark:bg-blue-950/50",
+    });
+  }
+
+  // 4. Excellent matches
+  if (matchStats && matchStats.excellent > 0) {
+    nudges.push({
+      id: "excellent-matches",
+      icon: Sparkles,
+      text: `${matchStats.excellent} excellent brand match${matchStats.excellent > 1 ? "es" : ""} for you`,
+      href: "/brand?tab=forYou",
+      cta: "Explore",
+      colorClass: "text-[var(--accent)]",
+      iconBg: "bg-[var(--accent-light)]",
+    });
+  }
+
+  // 5. Won deals
+  if (outreachStats.completed > 0) {
+    nudges.push({
+      id: "won-deals",
+      icon: Trophy,
+      text: `${outreachStats.completed} deal${outreachStats.completed > 1 ? "s" : ""} completed — nice work!`,
+      colorClass: "text-emerald-600 dark:text-emerald-400",
+      iconBg: "bg-emerald-100 dark:bg-emerald-950/50",
+    });
+  }
+
+  // 6. Empty state (only if nothing else)
+  if (nudges.length === 0 && outreachRecords.length === 0 && savedBrandIds.size === 0) {
+    nudges.push({
+      id: "empty",
+      icon: Rocket,
+      text: "Start pitching — your first brand deal awaits",
+      href: "/brand",
+      cta: "Find brands",
+      colorClass: "text-[var(--accent)]",
+      iconBg: "bg-[var(--accent-light)]",
+    });
+  }
+
+  return nudges.slice(0, 3);
 }
 
 export default function DashboardPage() {
@@ -66,8 +162,8 @@ export default function DashboardPage() {
   const [matchesLoading, setMatchesLoading] = useState(false);
 
   // Pipeline data
-  const { count: savedCount, toggleSave, isSaved, isSaving } = useFavorites(session?.user?.id);
-  const { stats: outreachStats } = useOutreach(session?.user?.id);
+  const { savedBrandIds, toggleSave, isSaved, isSaving } = useFavorites(session?.user?.id);
+  const { stats: outreachStats, records: outreachRecords } = useOutreach(session?.user?.id);
 
   const fetchProfile = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -139,8 +235,13 @@ export default function DashboardPage() {
   };
 
   const hasProfile = profile?.instagramUsername;
-  const topMatches = matches.slice(0, 6);
+  const topMatches = matches.slice(0, 3);
   const excellentMatches = matches.filter((m) => (m.matchScore || 0) >= 85);
+
+  const nudges = useMemo(
+    () => generateNudges(savedBrandIds, outreachRecords, outreachStats, matchStats),
+    [savedBrandIds, outreachRecords, outreachStats, matchStats]
+  );
 
   return (
     <DashboardShell
@@ -154,80 +255,38 @@ export default function DashboardPage() {
         </div>
       ) : hasProfile ? (
         <>
-          {/* Stats Overview - Compact header */}
-          <section className="mb-6">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <BlurFade delay={0}>
-                <Card className="p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4 text-[var(--accent-secondary)]" />
-                    <span className="text-xs text-muted-foreground">Followers</span>
-                  </div>
-                  <p className="text-2xl font-bold tracking-tight">
-                    {profile.followers ? (
-                      <NumberTicker value={profile.followers} className="text-foreground" />
-                    ) : "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {getCreatorTier(profile.followers || 0)} creator
-                  </p>
-                </Card>
-              </BlurFade>
-
-              <BlurFade delay={0.05}>
-                <Card className="p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-4 h-4 text-[var(--success)]" />
-                    <span className="text-xs text-muted-foreground">Engagement</span>
-                  </div>
-                  <p className="text-2xl font-bold tracking-tight">
-                    {profile.engagementRate ? (
-                      <>
-                        <NumberTicker value={Number(profile.engagementRate)} decimalPlaces={1} className="text-foreground" />%
-                      </>
-                    ) : "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {profile.engagementRate
-                      ? Number(profile.engagementRate) >= 3
-                        ? "Above average"
-                        : "Room to grow"
-                      : "Calculating..."}
-                  </p>
-                </Card>
-              </BlurFade>
-
-              <BlurFade delay={0.1}>
-                <Card className="p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="w-4 h-4 text-primary" />
-                    <span className="text-xs text-muted-foreground">Niche</span>
-                  </div>
-                  <p className="text-2xl font-bold tracking-tight capitalize">
-                    {profile.niche || "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {profile.niche ? "Detected from content" : "Not detected yet"}
-                  </p>
-                </Card>
-              </BlurFade>
-
-              <BlurFade delay={0.15}>
-                <Card className="p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Zap className="w-4 h-4 text-[var(--warning)]" />
-                    <span className="text-xs text-muted-foreground">Matches</span>
-                  </div>
-                  <p className="text-2xl font-bold tracking-tight">
-                    <NumberTicker value={matchStats?.total || 0} className="text-foreground" />
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {matchStats?.excellent || 0} excellent fits
-                  </p>
-                </Card>
-              </BlurFade>
-            </div>
-          </section>
+          {/* Smart Nudges */}
+          {nudges.length > 0 && (
+            <section className="mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {nudges.map((nudge, index) => (
+                  <BlurFade key={nudge.id} delay={index * 0.05}>
+                    <Card className="group relative overflow-hidden px-4 py-3.5 hover:shadow-md transition-all duration-200">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${nudge.iconBg} transition-transform duration-200 group-hover:scale-105`}
+                        >
+                          <nudge.icon className={`w-4.5 h-4.5 ${nudge.colorClass}`} />
+                        </div>
+                        <p className="flex-1 text-sm font-medium text-foreground leading-snug min-w-0">
+                          {nudge.text}
+                        </p>
+                        {nudge.href && nudge.cta && (
+                          <Link
+                            href={nudge.href}
+                            className={`shrink-0 text-xs font-semibold ${nudge.colorClass} hover:opacity-80 transition-opacity flex items-center gap-1`}
+                          >
+                            {nudge.cta}
+                            <ChevronRight className="w-3 h-3" />
+                          </Link>
+                        )}
+                      </div>
+                    </Card>
+                  </BlurFade>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Brand Matches - Main content */}
           <section className="mb-6">
@@ -289,60 +348,9 @@ export default function DashboardPage() {
             )}
           </section>
 
-          {/* Pipeline + Trending */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Pipeline Preview */}
+          {/* Trending Brands */}
+          <section>
             <BlurFade delay={0.3}>
-              <Card className="p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Kanban className="w-4 h-4 text-primary" />
-                    <h2 className="font-semibold text-sm">Your Pipeline</h2>
-                  </div>
-                  <Link
-                    href="/dashboard/pipeline"
-                    className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
-                  >
-                    Manage
-                    <ChevronRight className="w-3 h-3" />
-                  </Link>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2 text-center mb-4">
-                  {[
-                    { label: "Saved", count: savedCount, color: "var(--muted)" },
-                    { label: "Pitched", count: outreachStats.pitched, color: "var(--accent-secondary)" },
-                    { label: "Talking", count: outreachStats.negotiating, color: "var(--warning)" },
-                    { label: "Won", count: outreachStats.completed, color: "var(--success)" },
-                  ].map((stage) => (
-                    <div
-                      key={stage.label}
-                      className="p-3 rounded-lg bg-secondary"
-                    >
-                      <p
-                        className="text-lg font-bold mb-0.5"
-                        style={{ color: stage.color }}
-                      >
-                        <NumberTicker value={stage.count} />
-                      </p>
-                      <p className="text-[10px] font-medium text-muted-foreground">{stage.label}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-3 border-t border-border text-center">
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Track your outreach progress
-                  </p>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/dashboard/pipeline">Open Pipeline</Link>
-                  </Button>
-                </div>
-              </Card>
-            </BlurFade>
-
-            {/* Trending Brands */}
-            <BlurFade delay={0.35}>
               <Card className="p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
