@@ -98,6 +98,7 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           userId: session.user.id,
           profile,
+          enrich: true,
         }),
       });
 

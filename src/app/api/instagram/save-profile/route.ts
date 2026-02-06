@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getDb } from "@/lib/db";
 import { creatorProfile } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -84,56 +84,15 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date(),
     };
 
-    // If enrichment is requested, fetch enriched data
-    if (enrich) {
-      console.log(`[save-profile] Enriching profile for @${profile.username}...`);
-      const enriched = await enrichProfile(profile.username);
-
-      if (enriched) {
-        // Override base data with enriched data
-        profileData.followers = enriched.followers;
-        profileData.bio = enriched.bio;
-        profileData.profilePicture = enriched.profilePicture;
-        profileData.engagementRate = enriched.engagementRate?.toString() || null;
-
-        // Use AI-extracted contentThemes as niche (much more accurate than keyword detection)
-        if (enriched.contentThemes && enriched.contentThemes.length > 0) {
-          profileData.niche = enriched.contentThemes[0];
-        }
-
-        // Add enriched metrics
-        profileData.avgViews = enriched.avgViews;
-        profileData.avgLikes = enriched.avgLikes;
-        profileData.avgComments = enriched.avgComments;
-        profileData.postFrequency = enriched.postFrequency?.toString() || null;
-        profileData.viewToFollowerRatio = enriched.viewToFollowerRatio?.toString() || null;
-        profileData.contentThemes = enriched.contentThemes ? JSON.stringify(enriched.contentThemes) : null;
-        profileData.subNiches = enriched.subNiches ? JSON.stringify(enriched.subNiches) : null;
-        profileData.postTypeMix = enriched.postTypeMix ? JSON.stringify(enriched.postTypeMix) : null;
-        profileData.primaryLanguage = enriched.primaryLanguage;
-        profileData.locationDisplay = enriched.locationDisplay;
-        profileData.countryCode = enriched.countryCode;
-        profileData.postsAnalyzed = enriched.postsAnalyzed;
-        profileData.enrichedAt = new Date();
-        profileData.enrichmentVersion = 1;
-
-        console.log(`[save-profile] Enrichment complete for @${profile.username}: niche=${profileData.niche}`);
-      }
-    }
-
+    // Save basic profile immediately (fast)
+    let savedId: string;
     if (existing.length > 0) {
-      // Update existing profile
       await db
         .update(creatorProfile)
         .set(profileData)
         .where(eq(creatorProfile.userId, userId));
-
-      return NextResponse.json({
-        data: { id: existing[0].id, ...profileData },
-        enriched: enrich,
-      });
+      savedId = existing[0].id;
     } else {
-      // Insert new profile
       const [inserted] = await db
         .insert(creatorProfile)
         .values({
@@ -142,9 +101,62 @@ export async function POST(request: NextRequest) {
           createdAt: new Date(),
         })
         .returning();
-
-      return NextResponse.json({ data: inserted, enriched: enrich });
+      savedId = inserted.id;
     }
+
+    // Run enrichment in the background after the response is sent
+    if (enrich) {
+      after(async () => {
+        try {
+          console.log(`[save-profile] Background enrichment starting for @${profile.username}...`);
+          const enriched = await enrichProfile(profile.username);
+
+          if (enriched) {
+            const enrichedData: Record<string, unknown> = {
+              followers: enriched.followers,
+              bio: enriched.bio,
+              profilePicture: enriched.profilePicture,
+              engagementRate: enriched.engagementRate?.toString() || null,
+              avgViews: enriched.avgViews,
+              avgLikes: enriched.avgLikes,
+              avgComments: enriched.avgComments,
+              postFrequency: enriched.postFrequency?.toString() || null,
+              viewToFollowerRatio: enriched.viewToFollowerRatio?.toString() || null,
+              contentThemes: enriched.contentThemes ? JSON.stringify(enriched.contentThemes) : null,
+              subNiches: enriched.subNiches ? JSON.stringify(enriched.subNiches) : null,
+              postTypeMix: enriched.postTypeMix ? JSON.stringify(enriched.postTypeMix) : null,
+              primaryLanguage: enriched.primaryLanguage,
+              locationDisplay: enriched.locationDisplay,
+              countryCode: enriched.countryCode,
+              postsAnalyzed: enriched.postsAnalyzed,
+              enrichedAt: new Date(),
+              enrichmentVersion: 1,
+              updatedAt: new Date(),
+            };
+
+            // Use AI-extracted contentThemes as niche
+            if (enriched.contentThemes && enriched.contentThemes.length > 0) {
+              enrichedData.niche = enriched.contentThemes[0];
+            }
+
+            const db = getDb();
+            await db
+              .update(creatorProfile)
+              .set(enrichedData)
+              .where(eq(creatorProfile.userId, userId));
+
+            console.log(`[save-profile] Background enrichment complete for @${profile.username}: niche=${enrichedData.niche}`);
+          }
+        } catch (error) {
+          console.error(`[save-profile] Background enrichment failed for @${profile.username}:`, error);
+        }
+      });
+    }
+
+    return NextResponse.json({
+      data: { id: savedId, ...profileData },
+      enriching: enrich,
+    });
   } catch (error) {
     console.error("[api/instagram/save-profile] Error:", error);
     return NextResponse.json(
