@@ -4,6 +4,7 @@ import { creatorProfile } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 const XPOZ_SERVICE_URL = process.env.XPOZ_SERVICE_URL || "http://localhost:3001";
+const XPOZ_SERVICE_KEY = process.env.XPOZ_SERVICE_KEY;
 
 interface EnrichedProfile {
   username: string;
@@ -32,9 +33,14 @@ interface EnrichedProfile {
  */
 async function enrichProfile(username: string): Promise<EnrichedProfile | null> {
   try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (XPOZ_SERVICE_KEY) {
+      headers["x-api-key"] = XPOZ_SERVICE_KEY;
+    }
+
     const response = await fetch(`${XPOZ_SERVICE_URL}/profile/enrich`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ username }),
     });
 
