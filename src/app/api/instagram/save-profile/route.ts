@@ -96,6 +96,11 @@ export async function POST(request: NextRequest) {
         profileData.profilePicture = enriched.profilePicture;
         profileData.engagementRate = enriched.engagementRate?.toString() || null;
 
+        // Use AI-extracted contentThemes as niche (much more accurate than keyword detection)
+        if (enriched.contentThemes && enriched.contentThemes.length > 0) {
+          profileData.niche = enriched.contentThemes[0];
+        }
+
         // Add enriched metrics
         profileData.avgViews = enriched.avgViews;
         profileData.avgLikes = enriched.avgLikes;
@@ -112,7 +117,7 @@ export async function POST(request: NextRequest) {
         profileData.enrichedAt = new Date();
         profileData.enrichmentVersion = 1;
 
-        console.log(`[save-profile] Enrichment complete for @${profile.username}`);
+        console.log(`[save-profile] Enrichment complete for @${profile.username}: niche=${profileData.niche}`);
       }
     }
 
