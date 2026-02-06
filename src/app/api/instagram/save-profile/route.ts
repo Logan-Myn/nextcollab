@@ -3,111 +3,10 @@ import { getDb } from "@/lib/db";
 import { creatorProfile } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
-const BACKEND_API_KEY = process.env.BACKEND_API_KEY;
-
-interface EnrichedProfile {
-  username: string;
-  followers: number;
-  bio: string | null;
-  profilePicture: string | null;
-  isVerified: boolean;
-  avgViews: number | null;
-  avgLikes: number | null;
-  avgComments: number | null;
-  engagementRate: number | null;
-  postFrequency: number | null;
-  viewToFollowerRatio: number | null;
-  postTypeMix: { reels: number; images: number; carousels: number } | null;
-  postsAnalyzed: number | null;
-  contentThemes: string[] | null;
-  subNiches: string[] | null;
-  primaryLanguage: string | null;
-  locationDisplay: string | null;
-  countryCode: string | null;
-}
-
-/**
- * Try to enrich the profile with metrics and AI-extracted themes.
- * Falls back gracefully if enrichment fails.
- */
-async function enrichProfile(username: string): Promise<EnrichedProfile | null> {
-  try {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (BACKEND_API_KEY) {
-      headers["x-api-key"] = BACKEND_API_KEY;
-    }
-
-    const response = await fetch(`${BACKEND_URL}/profile/enrich`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ username }),
-    });
-
-    if (!response.ok) {
-      console.error(`[save-profile] Enrichment failed: ${response.status}`);
-      return null;
-    }
-
-    const data = await response.json();
-    return data.data as EnrichedProfile;
-  } catch (error) {
-    console.error("[save-profile] Enrichment error:", error);
-    return null;
-  }
-}
-
-async function runBackgroundEnrichment(username: string, userId: string) {
-  try {
-    console.log(`[save-profile] Background enrichment starting for @${username}...`);
-    const enriched = await enrichProfile(username);
-
-    if (enriched) {
-      const enrichedData: Record<string, unknown> = {
-        followers: enriched.followers,
-        bio: enriched.bio,
-        profilePicture: enriched.profilePicture,
-        engagementRate: enriched.engagementRate?.toString() || null,
-        avgViews: enriched.avgViews,
-        avgLikes: enriched.avgLikes,
-        avgComments: enriched.avgComments,
-        postFrequency: enriched.postFrequency?.toString() || null,
-        viewToFollowerRatio: enriched.viewToFollowerRatio?.toString() || null,
-        contentThemes: enriched.contentThemes ? JSON.stringify(enriched.contentThemes) : null,
-        subNiches: enriched.subNiches ? JSON.stringify(enriched.subNiches) : null,
-        postTypeMix: enriched.postTypeMix ? JSON.stringify(enriched.postTypeMix) : null,
-        primaryLanguage: enriched.primaryLanguage,
-        locationDisplay: enriched.locationDisplay,
-        countryCode: enriched.countryCode,
-        postsAnalyzed: enriched.postsAnalyzed,
-        enrichedAt: new Date(),
-        enrichmentVersion: 1,
-        updatedAt: new Date(),
-      };
-
-      if (enriched.contentThemes && enriched.contentThemes.length > 0) {
-        enrichedData.niche = enriched.contentThemes[0];
-      }
-
-      const db = getDb();
-      await db
-        .update(creatorProfile)
-        .set(enrichedData)
-        .where(eq(creatorProfile.userId, userId));
-
-      console.log(`[save-profile] Background enrichment complete for @${username}: niche=${enrichedData.niche}`);
-    } else {
-      console.log(`[save-profile] Enrichment returned null for @${username}`);
-    }
-  } catch (error) {
-    console.error(`[save-profile] Background enrichment failed for @${username}:`, error);
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, profile, enrich = false } = body;
+    const { userId, profile, forceReset } = body;
 
     if (!userId || !profile?.username) {
       return NextResponse.json(
@@ -125,24 +24,51 @@ export async function POST(request: NextRequest) {
       .where(eq(creatorProfile.userId, userId))
       .limit(1);
 
-    // Build base profile data from provided profile
-    const profileData: Record<string, unknown> = {
-      instagramUsername: profile.username,
-      followers: profile.followers || 0,
-      engagementRate: profile.engagementRate?.toString() || null,
-      niche: profile.niche || null,
-      bio: profile.bio || null,
-      profilePicture: profile.profilePicture || null,
-      lastSyncedAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    // Save basic profile immediately (fast)
     let savedId: string;
+
     if (existing.length > 0) {
+      const usernameChanged =
+        forceReset ||
+        existing[0].instagramUsername?.toLowerCase() !== profile.username.toLowerCase();
+
+      const updateData: Record<string, unknown> = {
+        instagramUsername: profile.username,
+        updatedAt: new Date(),
+      };
+
+      // If username changed, wipe all enriched data so SSE re-triggers
+      if (usernameChanged) {
+        updateData.followers = 0;
+        updateData.bio = null;
+        updateData.profilePicture = null;
+        updateData.niche = null;
+        updateData.engagementRate = null;
+        updateData.avgViews = null;
+        updateData.avgLikes = null;
+        updateData.avgComments = null;
+        updateData.postFrequency = null;
+        updateData.viewToFollowerRatio = null;
+        updateData.contentThemes = null;
+        updateData.subNiches = null;
+        updateData.postTypeMix = null;
+        updateData.primaryLanguage = null;
+        updateData.locationDisplay = null;
+        updateData.countryCode = null;
+        updateData.postsAnalyzed = null;
+        updateData.enrichedAt = null;
+        updateData.enrichmentVersion = null;
+      } else {
+        // Same username — only set fields if explicitly provided
+        if (profile.followers != null) updateData.followers = profile.followers;
+        if (profile.bio != null) updateData.bio = profile.bio;
+        if (profile.profilePicture != null) updateData.profilePicture = profile.profilePicture;
+        if (profile.niche != null) updateData.niche = profile.niche;
+        if (profile.engagementRate != null) updateData.engagementRate = profile.engagementRate.toString();
+      }
+
       await db
         .update(creatorProfile)
-        .set(profileData)
+        .set(updateData)
         .where(eq(creatorProfile.userId, userId));
       savedId = existing[0].id;
     } else {
@@ -150,21 +76,21 @@ export async function POST(request: NextRequest) {
         .insert(creatorProfile)
         .values({
           userId,
-          ...profileData,
+          instagramUsername: profile.username,
+          followers: profile.followers || 0,
+          engagementRate: profile.engagementRate?.toString() || null,
+          niche: profile.niche || null,
+          bio: profile.bio || null,
+          profilePicture: profile.profilePicture || null,
           createdAt: new Date(),
+          updatedAt: new Date(),
         })
         .returning();
       savedId = inserted.id;
     }
 
-    // Fire enrichment in background (don't await - runs after response is sent)
-    if (enrich) {
-      runBackgroundEnrichment(profile.username, userId).catch(() => {});
-    }
-
     return NextResponse.json({
-      data: { id: savedId, ...profileData },
-      enriching: enrich,
+      data: { id: savedId, instagramUsername: profile.username },
     });
   } catch (error) {
     console.error("[api/instagram/save-profile] Error:", error);

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Syne } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const syne = Syne({
@@ -48,6 +49,7 @@ export default function RootLayout({
       <body className={`${syne.variable} ${outfit.variable} antialiased`}>
         <ThemeProvider>
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

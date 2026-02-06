@@ -120,6 +120,22 @@ export async function GET(
           lastCollabAt: stats.lastCollabAt,
         },
 
+        // Enrichment data
+        avgViews: creatorData.avgViews,
+        avgLikes: creatorData.avgLikes,
+        avgComments: creatorData.avgComments,
+        enrichmentEngagementRate: creatorData.engagementRate,
+        postFrequency: creatorData.postFrequency,
+        viewToFollowerRatio: creatorData.viewToFollowerRatio,
+        contentThemes: creatorData.contentThemes,
+        subNiches: creatorData.subNiches,
+        postTypeMix: creatorData.postTypeMix,
+        primaryLanguage: creatorData.primaryLanguage,
+        locationDisplay: creatorData.locationDisplay,
+        countryCode: creatorData.countryCode,
+        postsAnalyzed: creatorData.postsAnalyzed,
+        enrichedAt: creatorData.enrichedAt,
+
         // Brand collaborations
         brandsWorkedWith: brandsWorkedWith.map(b => ({
           brandId: b.brandId,
