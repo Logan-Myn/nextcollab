@@ -45,6 +45,8 @@ export async function GET(request: NextRequest) {
         countryCode: creatorProfile.countryCode,
         niche: creatorProfile.niche,
         hasMediaKit: creatorProfile.hasMediaKit,
+        primaryLanguage: creatorProfile.primaryLanguage,
+        bio: creatorProfile.bio,
       })
       .from(creatorProfile)
       .where(sql`${creatorProfile.userId} = ${userId}`)
@@ -69,6 +71,8 @@ export async function GET(request: NextRequest) {
       countryCode: creator.countryCode,
       niche: creator.niche,
       hasMediaKit: creator.hasMediaKit,
+      primaryLanguage: creator.primaryLanguage,
+      bio: creator.bio,
     };
 
     // Get all brands with partnerships, including all fields for fit analysis
@@ -123,6 +127,7 @@ export async function GET(request: NextRequest) {
         typicalCreatorNiches: b.typicalCreatorNiches as string[] | null,
         niche: b.niche,
         category: b.category,
+        partnerLanguages: null, // Derived per-brand in detail view only
       };
 
       const analysis = calculateFitAnalysis(creatorData, brandData);

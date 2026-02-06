@@ -5,8 +5,8 @@
  * - Creator similarity (compared to brand's existing partners)
  * - Size match (follower count vs brand's partner range)
  * - Performance match (engagement, views)
- * - Content alignment (themes overlap)
- * - Geographic fit (region alignment)
+ * - Content alignment (themes overlap + niche/category fallback)
+ * - Language fit (language alignment between creator and brand's partners)
  * - Activity signal (brand's sponsorship recency and frequency)
  * - Trust signals (verification, media kit, etc.)
  */
@@ -22,6 +22,8 @@ export interface CreatorData {
   niche: string | null;
   hasMediaKit: boolean | null;
   isVerified?: boolean;
+  primaryLanguage: string | null;
+  bio: string | null;
 }
 
 export interface BrandData {
@@ -41,6 +43,7 @@ export interface BrandData {
   typicalCreatorNiches: string[] | null;
   niche: string | null;
   category: string | null;
+  partnerLanguages: string[] | null;
 }
 
 export interface FitCategory {
@@ -65,7 +68,7 @@ export interface FitAnalysis {
   contentAlignment: FitCategory & {
     matchingThemes: string[];
   };
-  geographicFit: FitCategory;
+  languageFit: FitCategory;
   activitySignal: FitCategory & {
     status: "very_active" | "active" | "moderate" | "low" | "unknown";
   };
@@ -96,8 +99,8 @@ export function calculateFitAnalysis(
   // 4. Content Alignment (15% weight)
   const contentAlignment = calculateContentAlignment(creator, brand, strengths, warnings);
 
-  // 5. Geographic Fit (10% weight)
-  const geographicFit = calculateGeographicFit(creator, brand, strengths, warnings);
+  // 5. Language Fit (10% weight)
+  const languageFit = calculateLanguageFit(creator, brand, strengths, warnings);
 
   // 6. Activity Signal (15% weight)
   const activitySignal = calculateActivitySignal(brand, strengths, warnings);
@@ -111,7 +114,7 @@ export function calculateFitAnalysis(
     sizeMatch.score * 0.20 +
     performanceMatch.score * 0.15 +
     contentAlignment.score * 0.15 +
-    geographicFit.score * 0.10 +
+    languageFit.score * 0.10 +
     activitySignal.score * 0.15 +
     trustSignals.score * 0.05
   );
@@ -130,7 +133,7 @@ export function calculateFitAnalysis(
     sizeMatch,
     performanceMatch,
     contentAlignment,
-    geographicFit,
+    languageFit,
     activitySignal,
     trustSignals,
     warnings,
@@ -273,10 +276,10 @@ function calculatePerformanceMatch(
   let meetsRequirements = false;
   const explanations: string[] = [];
 
-  // Check engagement rate
   const creatorEngagement = creator.engagementRate;
   const brandAvgEngagement = brand.avgPartnerEngagement;
 
+  // Compare engagement rates when both are available
   if (creatorEngagement !== null && brandAvgEngagement !== null) {
     if (creatorEngagement >= brandAvgEngagement) {
       score += 25;
@@ -291,9 +294,27 @@ function calculatePerformanceMatch(
       warnings.push("Your engagement rate is below their partner average");
       explanations.push(`Lower engagement than partner average`);
     }
+  } else if (creatorEngagement !== null) {
+    // No brand data to compare, evaluate engagement on its own
+    if (creatorEngagement >= 5) {
+      score += 30;
+      meetsRequirements = true;
+      strengths.push(`Excellent engagement rate (${creatorEngagement}%)`);
+      explanations.push(`${creatorEngagement}% engagement (excellent)`);
+    } else if (creatorEngagement >= 3) {
+      score += 20;
+      meetsRequirements = true;
+      explanations.push(`${creatorEngagement}% engagement (good)`);
+    } else if (creatorEngagement >= 1) {
+      score += 10;
+      explanations.push(`${creatorEngagement}% engagement (average)`);
+    } else {
+      warnings.push("Low engagement rate");
+      explanations.push(`${creatorEngagement}% engagement (below average)`);
+    }
   }
 
-  // Check views
+  // Compare views when both are available
   const creatorViews = creator.avgViews;
   const brandAvgViews = brand.avgPartnerViews;
 
@@ -306,6 +327,18 @@ function calculatePerformanceMatch(
     } else if (creatorViews >= brandAvgViews * 0.5) {
       score += 15;
       explanations.push(`Views in similar range to partners`);
+    }
+  } else if (creatorViews !== null) {
+    // No brand data to compare, evaluate views standalone
+    const followers = creator.followers || 1;
+    const viewRatio = creatorViews / followers;
+    if (viewRatio >= 0.3) {
+      score += 20;
+      meetsRequirements = true;
+      explanations.push(`${formatNumber(creatorViews)} avg views (strong reach)`);
+    } else if (viewRatio >= 0.1) {
+      score += 10;
+      explanations.push(`${formatNumber(creatorViews)} avg views`);
     }
   }
 
@@ -327,10 +360,13 @@ function calculateContentAlignment(
   const creatorThemes = creator.contentThemes || [];
   const creatorSubNiches = creator.subNiches || [];
   const brandThemes = brand.contentThemes || [];
+  const creatorNiche = creator.niche?.toLowerCase();
+  const brandCategory = brand.category?.toLowerCase();
+  const brandNiches = (brand.typicalCreatorNiches || []).map((n: string) => n.toLowerCase());
 
   const matchingThemes: string[] = [];
 
-  // Check theme overlap
+  // Check theme overlap (when both have contentThemes)
   for (const theme of creatorThemes) {
     if (brandThemes.some((bt: string) => bt.toLowerCase() === theme.toLowerCase())) {
       matchingThemes.push(theme);
@@ -349,77 +385,118 @@ function calculateContentAlignment(
     }
   }
 
+  // Fallback: match creator niche/themes against brand category
+  if (matchingThemes.length === 0 && creatorNiche) {
+    // Check creator niche vs brand category (e.g., "tech" vs "tech")
+    if (brandCategory && (creatorNiche === brandCategory || creatorNiche.includes(brandCategory) || brandCategory.includes(creatorNiche))) {
+      matchingThemes.push(creatorNiche);
+    }
+    // Check creator niche vs brand's typical creator niches
+    if (matchingThemes.length === 0 && brandNiches.some(n => n === creatorNiche || n.includes(creatorNiche) || creatorNiche.includes(n))) {
+      matchingThemes.push(creatorNiche);
+    }
+    // Check creator contentThemes vs brand category
+    if (matchingThemes.length === 0 && brandCategory) {
+      for (const theme of creatorThemes) {
+        if (theme.toLowerCase() === brandCategory || theme.toLowerCase().includes(brandCategory)) {
+          matchingThemes.push(theme);
+        }
+      }
+    }
+  }
+
   let score = 50;
   if (matchingThemes.length >= 3) {
     score = 95;
     strengths.push(`Strong content alignment: ${matchingThemes.slice(0, 3).join(", ")}`);
   } else if (matchingThemes.length >= 2) {
-    score = 80;
+    score = 85;
     strengths.push(`Good content alignment: ${matchingThemes.join(", ")}`);
   } else if (matchingThemes.length === 1) {
-    score = 65;
+    score = 75;
+    strengths.push(`Content aligned: ${matchingThemes[0]}`);
   } else if (creatorThemes.length > 0 && brandThemes.length > 0) {
     score = 40;
     warnings.push("Limited content theme overlap with this brand's partners");
+  } else if (!creatorNiche && !brandCategory) {
+    score = 50;
   }
 
   return {
     score,
     matchingThemes,
     explanation: matchingThemes.length > 0
-      ? `Matching themes: ${matchingThemes.join(", ")}`
-      : brandThemes.length === 0
+      ? `Matching: ${matchingThemes.join(", ")}`
+      : (brandThemes.length === 0 && !brandCategory)
         ? "Brand content themes not yet analyzed"
-        : "No direct content theme matches",
+        : creatorThemes.length === 0 && !creatorNiche
+          ? "Your content themes are not yet analyzed"
+          : "No direct content theme matches",
   };
 }
 
-function calculateGeographicFit(
+/**
+ * Calculate language fit between creator and brand's typical partners.
+ * Uses primaryLanguage when available, detects from bio as fallback.
+ */
+function calculateLanguageFit(
   creator: CreatorData,
   brand: BrandData,
   strengths: string[],
   warnings: string[]
-): FitAnalysis["geographicFit"] {
-  const creatorCountry = creator.countryCode;
-  const brandRegions = brand.creatorRegions || [];
+): FitAnalysis["languageFit"] {
+  // Get creator's language (from enrichment or bio detection)
+  const creatorLang = creator.primaryLanguage || detectLanguageFromBio(creator.bio);
+  const brandLanguages = brand.partnerLanguages || [];
 
-  if (!creatorCountry) {
+  if (!creatorLang) {
     return {
       score: 60,
-      explanation: "Your location is not available",
+      explanation: "Your content language could not be determined",
     };
   }
 
-  if (brandRegions.length === 0) {
+  const langName = getLanguageName(creatorLang);
+
+  if (brandLanguages.length === 0) {
+    // No brand partner language data - give neutral score but show detected language
     return {
-      score: 60,
-      explanation: "Brand's geographic preferences not yet determined",
+      score: 65,
+      explanation: `You create content in ${langName}`,
     };
   }
 
-  if (brandRegions.some((r: string) => r === creatorCountry)) {
-    strengths.push(`Brand partners with creators in your region (${creatorCountry})`);
+  // Exact language match
+  if (brandLanguages.some(l => l.toLowerCase() === creatorLang.toLowerCase())) {
+    strengths.push(`Brand partners with ${langName}-speaking creators`);
     return {
       score: 95,
-      explanation: `They work with creators in ${creatorCountry}`,
+      explanation: `Brand works with ${langName}-speaking creators`,
     };
   }
 
-  // Check continent/region match
-  const creatorContinent = getContinent(creatorCountry);
-  const brandContinents = brandRegions.map(getContinent);
-
-  if (creatorContinent && brandContinents.includes(creatorContinent)) {
+  // Check if brand works with related languages (same family)
+  const creatorFamily = getLanguageFamily(creatorLang);
+  const brandFamilies = brandLanguages.map(getLanguageFamily);
+  if (creatorFamily && brandFamilies.includes(creatorFamily)) {
     return {
       score: 70,
-      explanation: `They work with creators in your region (${creatorContinent})`,
+      explanation: `Brand works with creators in related languages`,
     };
   }
 
-  warnings.push("This brand may prefer creators from different regions");
+  // Check if brand is multilingual (works with 3+ languages) - more open to new languages
+  if (brandLanguages.length >= 3) {
+    return {
+      score: 65,
+      explanation: `Brand works across multiple languages (you: ${langName})`,
+    };
+  }
+
+  warnings.push(`Brand primarily works with ${brandLanguages.map(getLanguageName).join(", ")}-speaking creators`);
   return {
     score: 40,
-    explanation: `Brand typically works with creators from: ${brandRegions.slice(0, 3).join(", ")}`,
+    explanation: `Brand primarily works with ${brandLanguages.map(getLanguageName).join(", ")} creators`,
   };
 }
 
@@ -542,26 +619,74 @@ function formatNumber(n: number): string {
   return n.toString();
 }
 
-function getContinent(countryCode: string): string | null {
-  const continents: Record<string, string> = {
-    // Europe
-    FR: "Europe", DE: "Europe", GB: "Europe", IT: "Europe", ES: "Europe",
-    NL: "Europe", BE: "Europe", AT: "Europe", CH: "Europe", SE: "Europe",
-    NO: "Europe", DK: "Europe", FI: "Europe", PL: "Europe", PT: "Europe",
-    IE: "Europe", CZ: "Europe", GR: "Europe", HU: "Europe", RO: "Europe",
-    // North America
-    US: "North America", CA: "North America", MX: "North America",
-    // South America
-    BR: "South America", AR: "South America", CO: "South America", CL: "South America",
-    // Asia
-    JP: "Asia", KR: "Asia", CN: "Asia", IN: "Asia", SG: "Asia",
-    TH: "Asia", ID: "Asia", MY: "Asia", PH: "Asia", VN: "Asia",
-    // Oceania
-    AU: "Oceania", NZ: "Oceania",
-    // Middle East
-    AE: "Middle East", SA: "Middle East", IL: "Middle East",
-    // Africa
-    ZA: "Africa", NG: "Africa", EG: "Africa", KE: "Africa",
+/**
+ * Detect language from bio text using common patterns.
+ * Returns ISO 639-1 code or null.
+ */
+function detectLanguageFromBio(bio: string | null): string | null {
+  if (!bio || bio.length < 5) return null;
+  const text = bio.toLowerCase();
+
+  // French markers
+  if (/\b(collabs?|suivez|abonnez|partenariat|contenu|créat(eur|rice)|bienvenue|mais|avec|pour|dans|nous|vous|j'ai|d'|l'|c'est|très|bonjour|merci)\b/.test(text)) {
+    return "fr";
+  }
+
+  // Spanish markers
+  if (/\b(colaboraciones|sígueme|creador(a)?|contenido|bienvenidos|soy|hola|también|aquí|más|contacto|trabajo)\b/.test(text)) {
+    return "es";
+  }
+
+  // German markers
+  if (/\b(kooperationen|zusammenarbeit|inhalte|willkommen|ich bin|hier|auch|für|und|oder|über|mein)\b/.test(text)) {
+    return "de";
+  }
+
+  // Italian markers
+  if (/\b(collaborazioni|seguimi|creatore|contenuti|benvenuti|sono|ciao|anche|qui|per|con|sono)\b/.test(text)) {
+    return "it";
+  }
+
+  // Portuguese markers
+  if (/\b(parcerias|siga|criador(a)?|conteúdo|bem[- ]vindo|sou|olá|também|aqui|para|com|meu|minha)\b/.test(text)) {
+    return "pt";
+  }
+
+  // Dutch markers
+  if (/\b(samenwerkingen|volg|content creator|welkom|ik ben|hier|ook|voor|en|of|mijn)\b/.test(text)) {
+    return "nl";
+  }
+
+  // Default to English if we detect English-specific words
+  if (/\b(collabs?|follow|creator|content|welcome|based in|dm|email|link|click)\b/.test(text)) {
+    return "en";
+  }
+
+  return null;
+}
+
+function getLanguageName(code: string): string {
+  const names: Record<string, string> = {
+    en: "English", fr: "French", es: "Spanish", de: "German",
+    it: "Italian", pt: "Portuguese", nl: "Dutch", sv: "Swedish",
+    no: "Norwegian", da: "Danish", fi: "Finnish", pl: "Polish",
+    cs: "Czech", hu: "Hungarian", ro: "Romanian", el: "Greek",
+    tr: "Turkish", ar: "Arabic", ja: "Japanese", ko: "Korean",
+    zh: "Chinese", hi: "Hindi", ru: "Russian", uk: "Ukrainian",
+    th: "Thai", vi: "Vietnamese", id: "Indonesian", ms: "Malay",
   };
-  return continents[countryCode] || null;
+  return names[code.toLowerCase()] || code.toUpperCase();
+}
+
+function getLanguageFamily(code: string): string | null {
+  const families: Record<string, string> = {
+    en: "germanic", de: "germanic", nl: "germanic", sv: "germanic",
+    no: "germanic", da: "germanic",
+    fr: "romance", es: "romance", it: "romance", pt: "romance", ro: "romance",
+    ja: "cjk", ko: "cjk", zh: "cjk",
+    ar: "semitic", he: "semitic",
+    hi: "indic", ur: "indic",
+    pl: "slavic", cs: "slavic", ru: "slavic", uk: "slavic",
+  };
+  return families[code.toLowerCase()] || null;
 }

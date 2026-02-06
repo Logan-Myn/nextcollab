@@ -8,7 +8,7 @@ import {
   Users,
   BarChart2,
   Zap,
-  MapPin,
+  Globe,
   Activity,
   Shield,
   Target,
@@ -269,10 +269,10 @@ export function FitAnalysisCard({ brandId, userId, prefetchedAnalysis }: FitAnal
           />
 
           <CategoryItem
-            icon={MapPin}
-            title="Geographic Fit"
-            score={analysis.geographicFit.score}
-            explanation={analysis.geographicFit.explanation}
+            icon={Globe}
+            title="Language Fit"
+            score={analysis.languageFit.score}
+            explanation={analysis.languageFit.explanation}
           />
 
           <CategoryItem
@@ -302,7 +302,7 @@ export function FitAnalysisCard({ brandId, userId, prefetchedAnalysis }: FitAnal
           <ScoreBar score={analysis.performanceMatch.score} label="Performance (15%)" />
           <ScoreBar score={analysis.contentAlignment.score} label="Content Alignment (15%)" />
           <ScoreBar score={analysis.activitySignal.score} label="Brand Activity (15%)" />
-          <ScoreBar score={analysis.geographicFit.score} label="Geographic Fit (10%)" />
+          <ScoreBar score={analysis.languageFit.score} label="Language Fit (10%)" />
           <ScoreBar score={analysis.trustSignals.score} label="Trust Signals (5%)" />
         </div>
       </Card>

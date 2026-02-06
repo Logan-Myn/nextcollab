@@ -40,6 +40,8 @@ export async function GET(
         countryCode: creatorProfile.countryCode,
         niche: creatorProfile.niche,
         hasMediaKit: creatorProfile.hasMediaKit,
+        primaryLanguage: creatorProfile.primaryLanguage,
+        bio: creatorProfile.bio,
       })
       .from(creatorProfile)
       .where(sql`${creatorProfile.userId} = ${userId}`)
@@ -90,6 +92,18 @@ export async function GET(
       );
     }
 
+    // Query partner languages from discovered creators linked through partnerships
+    const partnerLangResult = await db.execute(sql`
+      SELECT DISTINCT dc.primary_language
+      FROM partnership p
+      LEFT JOIN discovered_creator dc ON dc.id = p.discovered_creator_id
+      WHERE p.brand_id = ${brandId}
+        AND dc.primary_language IS NOT NULL
+    `);
+    const partnerLanguages = partnerLangResult.rows
+      .map((r: Record<string, unknown>) => r.primary_language as string)
+      .filter(Boolean);
+
     // Transform to fit analysis types
     const creatorData: CreatorData = {
       followers: creator.followers,
@@ -101,6 +115,8 @@ export async function GET(
       countryCode: creator.countryCode,
       niche: creator.niche,
       hasMediaKit: creator.hasMediaKit,
+      primaryLanguage: creator.primaryLanguage,
+      bio: creator.bio,
     };
 
     const brandFitData: BrandData = {
@@ -120,6 +136,7 @@ export async function GET(
       typicalCreatorNiches: brandData.typicalCreatorNiches as string[] | null,
       niche: brandData.niche,
       category: brandData.category,
+      partnerLanguages: partnerLanguages.length > 0 ? partnerLanguages : null,
     };
 
     // Calculate fit analysis
