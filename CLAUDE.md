@@ -51,7 +51,7 @@ bun db:studio    # Open Drizzle Studio GUI
 ┌─────────────────┐
 │  OVH Server     │
 │  - Redis        │
-│  - Xpoz MCP     │
+│  - Backend API  │
 │  - Cron jobs    │
 │  - Staging      │
 └─────────────────┘
@@ -66,13 +66,14 @@ bun db:studio    # Open Drizzle Studio GUI
 - `src/lib/db/schema.ts` - Database schema (Better-Auth tables + app tables)
 - `src/lib/auth.ts` - Better-Auth server configuration
 - `src/lib/auth-client.ts` - Better-Auth React client hooks
+- `src/lib/instagram-service.ts` - Backend service client (profile fetching)
 - `src/app/api/auth/[...all]/route.ts` - Auth API routes
 
 ## Platform Features
 
-- **Brand Database:** Scraped via Xpoz MCP (#ad, #sponsored detection)
+- **Brand Database:** Scraped via backend service (#ad, #sponsored detection)
 - **AI Matching:** "For You" feed with personalized brand recommendations
-- **Creator Profiles:** Auto-populated from Instagram username (Xpoz) + optional OAuth
+- **Creator Profiles:** Auto-populated from Instagram username (Apify) + optional OAuth
 - **Onboarding:** Username-first (low friction) → OAuth optional for deeper insights
 - **Target:** EU creators first, agencies as secondary market
 

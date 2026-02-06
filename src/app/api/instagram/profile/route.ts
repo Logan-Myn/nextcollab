@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchInstagramProfile } from "@/lib/xpoz";
+import { fetchInstagramProfile } from "@/lib/instagram-service";
 
 export async function GET(request: NextRequest) {
   const username = request.nextUrl.searchParams.get("username");

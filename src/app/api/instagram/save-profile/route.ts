@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse, after } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { creatorProfile } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-const XPOZ_SERVICE_URL = process.env.XPOZ_SERVICE_URL || "http://localhost:3001";
-const XPOZ_SERVICE_KEY = process.env.XPOZ_SERVICE_KEY;
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3001";
+const BACKEND_API_KEY = process.env.BACKEND_API_KEY;
 
 interface EnrichedProfile {
   username: string;
@@ -34,11 +34,11 @@ interface EnrichedProfile {
 async function enrichProfile(username: string): Promise<EnrichedProfile | null> {
   try {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (XPOZ_SERVICE_KEY) {
-      headers["x-api-key"] = XPOZ_SERVICE_KEY;
+    if (BACKEND_API_KEY) {
+      headers["x-api-key"] = BACKEND_API_KEY;
     }
 
-    const response = await fetch(`${XPOZ_SERVICE_URL}/profile/enrich`, {
+    const response = await fetch(`${BACKEND_URL}/profile/enrich`, {
       method: "POST",
       headers,
       body: JSON.stringify({ username }),
@@ -54,6 +54,53 @@ async function enrichProfile(username: string): Promise<EnrichedProfile | null> 
   } catch (error) {
     console.error("[save-profile] Enrichment error:", error);
     return null;
+  }
+}
+
+async function runBackgroundEnrichment(username: string, userId: string) {
+  try {
+    console.log(`[save-profile] Background enrichment starting for @${username}...`);
+    const enriched = await enrichProfile(username);
+
+    if (enriched) {
+      const enrichedData: Record<string, unknown> = {
+        followers: enriched.followers,
+        bio: enriched.bio,
+        profilePicture: enriched.profilePicture,
+        engagementRate: enriched.engagementRate?.toString() || null,
+        avgViews: enriched.avgViews,
+        avgLikes: enriched.avgLikes,
+        avgComments: enriched.avgComments,
+        postFrequency: enriched.postFrequency?.toString() || null,
+        viewToFollowerRatio: enriched.viewToFollowerRatio?.toString() || null,
+        contentThemes: enriched.contentThemes ? JSON.stringify(enriched.contentThemes) : null,
+        subNiches: enriched.subNiches ? JSON.stringify(enriched.subNiches) : null,
+        postTypeMix: enriched.postTypeMix ? JSON.stringify(enriched.postTypeMix) : null,
+        primaryLanguage: enriched.primaryLanguage,
+        locationDisplay: enriched.locationDisplay,
+        countryCode: enriched.countryCode,
+        postsAnalyzed: enriched.postsAnalyzed,
+        enrichedAt: new Date(),
+        enrichmentVersion: 1,
+        updatedAt: new Date(),
+      };
+
+      if (enriched.contentThemes && enriched.contentThemes.length > 0) {
+        enrichedData.niche = enriched.contentThemes[0];
+      }
+
+      const db = getDb();
+      await db
+        .update(creatorProfile)
+        .set(enrichedData)
+        .where(eq(creatorProfile.userId, userId));
+
+      console.log(`[save-profile] Background enrichment complete for @${username}: niche=${enrichedData.niche}`);
+    } else {
+      console.log(`[save-profile] Enrichment returned null for @${username}`);
+    }
+  } catch (error) {
+    console.error(`[save-profile] Background enrichment failed for @${username}:`, error);
   }
 }
 
@@ -110,53 +157,9 @@ export async function POST(request: NextRequest) {
       savedId = inserted.id;
     }
 
-    // Run enrichment in the background after the response is sent
+    // Fire enrichment in background (don't await - runs after response is sent)
     if (enrich) {
-      after(async () => {
-        try {
-          console.log(`[save-profile] Background enrichment starting for @${profile.username}...`);
-          const enriched = await enrichProfile(profile.username);
-
-          if (enriched) {
-            const enrichedData: Record<string, unknown> = {
-              followers: enriched.followers,
-              bio: enriched.bio,
-              profilePicture: enriched.profilePicture,
-              engagementRate: enriched.engagementRate?.toString() || null,
-              avgViews: enriched.avgViews,
-              avgLikes: enriched.avgLikes,
-              avgComments: enriched.avgComments,
-              postFrequency: enriched.postFrequency?.toString() || null,
-              viewToFollowerRatio: enriched.viewToFollowerRatio?.toString() || null,
-              contentThemes: enriched.contentThemes ? JSON.stringify(enriched.contentThemes) : null,
-              subNiches: enriched.subNiches ? JSON.stringify(enriched.subNiches) : null,
-              postTypeMix: enriched.postTypeMix ? JSON.stringify(enriched.postTypeMix) : null,
-              primaryLanguage: enriched.primaryLanguage,
-              locationDisplay: enriched.locationDisplay,
-              countryCode: enriched.countryCode,
-              postsAnalyzed: enriched.postsAnalyzed,
-              enrichedAt: new Date(),
-              enrichmentVersion: 1,
-              updatedAt: new Date(),
-            };
-
-            // Use AI-extracted contentThemes as niche
-            if (enriched.contentThemes && enriched.contentThemes.length > 0) {
-              enrichedData.niche = enriched.contentThemes[0];
-            }
-
-            const db = getDb();
-            await db
-              .update(creatorProfile)
-              .set(enrichedData)
-              .where(eq(creatorProfile.userId, userId));
-
-            console.log(`[save-profile] Background enrichment complete for @${profile.username}: niche=${enrichedData.niche}`);
-          }
-        } catch (error) {
-          console.error(`[save-profile] Background enrichment failed for @${profile.username}:`, error);
-        }
-      });
+      runBackgroundEnrichment(profile.username, userId).catch(() => {});
     }
 
     return NextResponse.json({

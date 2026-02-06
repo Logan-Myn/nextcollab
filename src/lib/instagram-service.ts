@@ -1,5 +1,5 @@
-const XPOZ_SERVICE_URL = process.env.XPOZ_SERVICE_URL;
-const XPOZ_SERVICE_KEY = process.env.XPOZ_SERVICE_KEY;
+const BACKEND_URL = process.env.BACKEND_URL;
+const BACKEND_API_KEY = process.env.BACKEND_API_KEY;
 
 function cleanBioText(bio: string): string {
   return bio
@@ -26,14 +26,14 @@ export interface InstagramProfile {
 export async function fetchInstagramProfile(
   username: string
 ): Promise<InstagramProfile | null> {
-  if (!XPOZ_SERVICE_URL || !XPOZ_SERVICE_KEY) {
-    throw new Error("XPOZ_SERVICE_URL or XPOZ_SERVICE_KEY is not configured");
+  if (!BACKEND_URL || !BACKEND_API_KEY) {
+    throw new Error("BACKEND_URL or BACKEND_API_KEY is not configured");
   }
 
   const res = await fetch(
-    `${XPOZ_SERVICE_URL}/profile/${encodeURIComponent(username)}`,
+    `${BACKEND_URL}/profile/${encodeURIComponent(username)}`,
     {
-      headers: { "x-api-key": XPOZ_SERVICE_KEY },
+      headers: { "x-api-key": BACKEND_API_KEY },
       signal: AbortSignal.timeout(60000), // 60s - backend does profile + posts + analysis
     }
   );
@@ -42,7 +42,7 @@ export async function fetchInstagramProfile(
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Xpoz service error (${res.status}): ${body}`);
+    throw new Error(`Backend service error (${res.status}): ${body}`);
   }
 
   const json = await res.json();
