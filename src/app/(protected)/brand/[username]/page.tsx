@@ -34,6 +34,7 @@ import { NumberTicker } from "@/components/ui/number-ticker";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { PitchWizard } from "@/components/pitch/PitchWizard";
 import type { CreatorData, BrandData } from "@/lib/ai/pitch-prompts";
+import type { FitAnalysis } from "@/lib/fit-analysis";
 
 interface Collab {
   creatorUsername: string | null;
@@ -162,8 +163,8 @@ export default function BrandDetailPage() {
 
   // Favorites hook for save functionality
   const { isSaved, isSaving, toggleSave } = useFavorites(session?.user?.id);
-  const [matchScore, setMatchScore] = useState<number | null>(null);
-  const [matchReasons, setMatchReasons] = useState<string[]>([]);
+  const [fitAnalysis, setFitAnalysis] = useState<FitAnalysis | null>(null);
+  const [fitLoading, setFitLoading] = useState(false);
   const [statsRevealed, setStatsRevealed] = useState(false);
   const [pitchWizardOpen, setPitchWizardOpen] = useState(false);
 
@@ -199,70 +200,31 @@ export default function BrandDetailPage() {
     }
   }, [username, router]);
 
-  // Calculate match score based on creator profile
-  useEffect(() => {
-    if (!brand || !profile) return;
-
-    let score = 50;
-    const reasons: string[] = [];
-
-    // Niche alignment
-    const creatorNiche = profile.niche?.toLowerCase();
-    const brandCategory = brand.category?.toLowerCase();
-    const brandNiche = brand.niche?.toLowerCase();
-    const brandNiches = Array.isArray(brand.typicalCreatorNiches)
-      ? brand.typicalCreatorNiches.map((n) => n.toLowerCase())
-      : [];
-
-    if (creatorNiche) {
-      if (brandCategory === creatorNiche || brandNiche === creatorNiche || brandNiches.includes(creatorNiche)) {
-        score += 25;
-        reasons.push(`Partners with ${profile.niche} creators`);
-      } else if (brandNiches.some((n) => n.includes(creatorNiche) || creatorNiche.includes(n))) {
-        score += 15;
-        reasons.push("Related niche alignment");
+  // Fetch real fit analysis when brand and session are available
+  const fetchFitAnalysis = useCallback(async () => {
+    if (!brand || !session?.user?.id) return;
+    setFitLoading(true);
+    try {
+      const res = await fetch(`/api/brands/${brand.id}/fit?userId=${encodeURIComponent(session.user.id)}`);
+      if (res.ok) {
+        const json = await res.json();
+        setFitAnalysis(json.data);
       }
+    } catch (error) {
+      console.error("Failed to fetch fit analysis:", error);
+    } finally {
+      setFitLoading(false);
     }
-
-    // Follower range fit
-    const creatorFollowers = profile.followers || 0;
-    const typicalMin = brand.typicalFollowerMin || 0;
-    const typicalMax = brand.typicalFollowerMax || Infinity;
-
-    if (creatorFollowers >= typicalMin && creatorFollowers <= typicalMax) {
-      score += 20;
-      reasons.push("Your follower count fits their range");
-    } else if (brand.stats.avgCreatorFollowers > 0) {
-      const ratio = creatorFollowers / brand.stats.avgCreatorFollowers;
-      if (ratio >= 0.5 && ratio <= 2) {
-        score += 15;
-        reasons.push("Similar size to their partners");
-      }
-    }
-
-    // Activity
-    const partnershipCount = brand.partnershipCount || 0;
-    if (partnershipCount >= 5) {
-      score += 12;
-      reasons.push(`Very active (${partnershipCount} recent collabs)`);
-    } else if (partnershipCount >= 2) {
-      score += 8;
-      reasons.push(`Active (${partnershipCount} recent collabs)`);
-    }
-
-    // Verified bonus
-    if (brand.isVerifiedAccount) {
-      score += 3;
-    }
-
-    setMatchScore(Math.min(score, 100));
-    setMatchReasons(reasons.length > 0 ? reasons : ["Brand sponsors creators on Instagram"]);
-  }, [brand, profile]);
+  }, [brand, session?.user?.id]);
 
   useEffect(() => {
     fetchProfile();
     fetchBrand();
   }, [fetchProfile, fetchBrand]);
+
+  useEffect(() => {
+    fetchFitAnalysis();
+  }, [fetchFitAnalysis]);
 
   const handleSave = async () => {
     if (brand) {
@@ -363,15 +325,20 @@ export default function BrandDetailPage() {
                 </div>
 
                 {/* Match Score - Compact pill */}
-                {matchScore !== null && (
+                {fitAnalysis && (
                   <div className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-bold ${
-                    matchScore >= 85
+                    fitAnalysis.overallScore >= 80
                       ? "bg-[var(--success)]/10 text-[var(--success)]"
-                      : matchScore >= 70
+                      : fitAnalysis.overallScore >= 60
                         ? "bg-[var(--accent)]/10 text-[var(--accent)]"
                         : "bg-[var(--warning)]/10 text-[var(--warning)]"
                   }`}>
-                    {matchScore}% match
+                    {fitAnalysis.overallScore}% match
+                  </div>
+                )}
+                {fitLoading && !fitAnalysis && (
+                  <div className="shrink-0 px-3 py-1.5 rounded-full text-sm font-bold bg-[var(--surface-elevated)] text-[var(--muted)]">
+                    <Loader2 className="w-4 h-4 animate-spin inline" />
                   </div>
                 )}
 
@@ -721,7 +688,7 @@ export default function BrandDetailPage() {
               <FitAnalysisCard
                 brandId={brand.id}
                 userId={session.user.id}
-                basicMatchScore={matchScore ?? undefined}
+                prefetchedAnalysis={fitAnalysis}
               />
             )}
           </section>

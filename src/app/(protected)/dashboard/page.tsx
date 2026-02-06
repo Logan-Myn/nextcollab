@@ -236,7 +236,7 @@ export default function DashboardPage() {
 
   const hasProfile = profile?.instagramUsername;
   const topMatches = matches.slice(0, 3);
-  const excellentMatches = matches.filter((m) => (m.matchScore || 0) >= 85);
+  const excellentMatches = matches.filter((m) => (m.matchScore || 0) >= 80);
 
   const nudges = useMemo(
     () => generateNudges(savedBrandIds, outreachRecords, outreachStats, matchStats),

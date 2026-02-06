@@ -21,8 +21,8 @@ import type { FitAnalysis } from "@/lib/fit-analysis";
 interface FitAnalysisCardProps {
   brandId: string;
   userId: string;
-  /** Basic match score to show while loading detailed analysis */
-  basicMatchScore?: number;
+  /** Pre-fetched fit analysis data to avoid double-fetching */
+  prefetchedAnalysis?: FitAnalysis | null;
 }
 
 function formatNumber(n: number | null | undefined): string {
@@ -95,12 +95,19 @@ function CategoryItem({ icon: Icon, title, score, explanation, detail }: Categor
   );
 }
 
-export function FitAnalysisCard({ brandId, userId, basicMatchScore }: FitAnalysisCardProps) {
-  const [analysis, setAnalysis] = useState<FitAnalysis | null>(null);
-  const [loading, setLoading] = useState(true);
+export function FitAnalysisCard({ brandId, userId, prefetchedAnalysis }: FitAnalysisCardProps) {
+  const [analysis, setAnalysis] = useState<FitAnalysis | null>(prefetchedAnalysis ?? null);
+  const [loading, setLoading] = useState(!prefetchedAnalysis);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Skip fetch if we already have prefetched data
+    if (prefetchedAnalysis) {
+      setAnalysis(prefetchedAnalysis);
+      setLoading(false);
+      return;
+    }
+
     async function fetchAnalysis() {
       try {
         const res = await fetch(`/api/brands/${brandId}/fit?userId=${encodeURIComponent(userId)}`);
@@ -118,7 +125,7 @@ export function FitAnalysisCard({ brandId, userId, basicMatchScore }: FitAnalysi
     }
 
     fetchAnalysis();
-  }, [brandId, userId]);
+  }, [brandId, userId, prefetchedAnalysis]);
 
   if (loading) {
     return (
@@ -126,11 +133,6 @@ export function FitAnalysisCard({ brandId, userId, basicMatchScore }: FitAnalysi
         <div className="flex flex-col items-center justify-center py-8">
           <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin mb-4" />
           <p className="text-sm text-[var(--muted)]">Analyzing fit...</p>
-          {basicMatchScore !== undefined && (
-            <p className="text-xs text-[var(--muted)] mt-2">
-              Basic match: {basicMatchScore}%
-            </p>
-          )}
         </div>
       </Card>
     );
@@ -144,14 +146,6 @@ export function FitAnalysisCard({ brandId, userId, basicMatchScore }: FitAnalysi
           <p className="text-sm text-[var(--muted)]">
             {error || "Unable to calculate fit analysis"}
           </p>
-          {basicMatchScore !== undefined && (
-            <div className="mt-4 text-center">
-              <p className="text-xs text-[var(--muted)]">Basic match score</p>
-              <p className={`text-2xl font-bold ${getScoreColor(basicMatchScore)}`}>
-                {basicMatchScore}%
-              </p>
-            </div>
-          )}
         </div>
       </Card>
     );

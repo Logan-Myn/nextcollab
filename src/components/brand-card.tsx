@@ -46,16 +46,16 @@ function getActivityLevel(
 }
 
 function getMatchClass(score: number): string {
-  if (score >= 85) return "excellent";
-  if (score >= 70) return "good";
+  if (score >= 80) return "excellent";
+  if (score >= 60) return "good";
   return "fair";
 }
 
 function getMatchLabel(score: number): string {
-  if (score >= 90) return "Perfect Match";
-  if (score >= 85) return "Excellent";
-  if (score >= 70) return "Strong";
-  if (score >= 50) return "Good";
+  if (score >= 85) return "Perfect Match";
+  if (score >= 80) return "Excellent";
+  if (score >= 60) return "Strong";
+  if (score >= 40) return "Good";
   return "Potential";
 }
 

@@ -56,9 +56,9 @@ export async function GET(
       .orderBy(sql`MAX(${partnership.detectedAt}) DESC`)
       .limit(30);
 
-    // Get latest posts with images for preview section
+    // Get latest posts with images for preview section (deduplicated by postUrl)
     const latestPosts = await db
-      .select({
+      .selectDistinctOn([partnership.postUrl], {
         postUrl: partnership.postUrl,
         displayUrl: partnership.displayUrl,
         postType: partnership.postType,
@@ -72,7 +72,7 @@ export async function GET(
           isNotNull(partnership.displayUrl)
         )
       )
-      .orderBy(desc(partnership.detectedAt))
+      .orderBy(partnership.postUrl, desc(partnership.detectedAt))
       .limit(4);
 
     // Fetch creator details for each aggregated creator

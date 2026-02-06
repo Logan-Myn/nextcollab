@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { brand, creatorProfile } from "@/lib/db/schema";
 import { desc, sql, ne, isNotNull, and } from "drizzle-orm";
+import { calculateFitAnalysis, type CreatorData, type BrandData } from "@/lib/fit-analysis";
 
 interface MatchedBrand {
   id: string;
@@ -32,9 +33,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get creator profile
+    // Get creator profile with all fields needed for fit analysis
     const creatorResult = await db
-      .select()
+      .select({
+        followers: creatorProfile.followers,
+        engagementRate: creatorProfile.engagementRate,
+        avgViews: creatorProfile.avgViews,
+        avgLikes: creatorProfile.avgLikes,
+        contentThemes: creatorProfile.contentThemes,
+        subNiches: creatorProfile.subNiches,
+        countryCode: creatorProfile.countryCode,
+        niche: creatorProfile.niche,
+        hasMediaKit: creatorProfile.hasMediaKit,
+      })
       .from(creatorProfile)
       .where(sql`${creatorProfile.userId} = ${userId}`)
       .limit(1);
@@ -48,7 +59,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all brands with partnerships (active brands)
+    const creatorData: CreatorData = {
+      followers: creator.followers,
+      engagementRate: creator.engagementRate ? Number(creator.engagementRate) : null,
+      avgViews: creator.avgViews,
+      avgLikes: creator.avgLikes,
+      contentThemes: creator.contentThemes as string[] | null,
+      subNiches: creator.subNiches as string[] | null,
+      countryCode: creator.countryCode,
+      niche: creator.niche,
+      hasMediaKit: creator.hasMediaKit,
+    };
+
+    // Get all brands with partnerships, including all fields for fit analysis
     const brands = await db
       .select({
         id: brand.id,
@@ -58,111 +81,51 @@ export async function GET(request: NextRequest) {
         category: brand.category,
         niche: brand.niche,
         followers: brand.followers,
-        following: brand.following,
         partnershipCount: brand.partnershipCount,
         activityScore: brand.activityScore,
         bio: brand.bio,
         isVerifiedAccount: brand.isVerifiedAccount,
+        // Fields for fit analysis
+        minCreatorFollowers: brand.minCreatorFollowers,
+        avgCreatorFollowers: brand.avgCreatorFollowers,
         typicalFollowerMin: brand.typicalFollowerMin,
         typicalFollowerMax: brand.typicalFollowerMax,
-        avgCreatorFollowers: brand.avgCreatorFollowers,
-        typicalCreatorNiches: brand.typicalCreatorNiches,
+        avgPartnerEngagement: brand.avgPartnerEngagement,
+        avgPartnerViews: brand.avgPartnerViews,
+        contentThemes: brand.contentThemes,
+        creatorRegions: brand.creatorRegions,
         lastPartnershipAt: brand.lastPartnershipAt,
+        firstPartnershipAt: brand.firstPartnershipAt,
+        sponsorshipFrequency: brand.sponsorshipFrequency,
+        typicalCreatorNiches: brand.typicalCreatorNiches,
       })
       .from(brand)
       .where(and(isNotNull(brand.partnershipCount), ne(brand.partnershipCount, 0)))
       .orderBy(desc(brand.partnershipCount))
       .limit(100);
 
-    // Calculate match scores
+    // Calculate real fit analysis for each brand
     const matchedBrands: MatchedBrand[] = brands.map((b) => {
-      const reasons: string[] = [];
-      let score = 50; // Base score
+      const brandData: BrandData = {
+        minCreatorFollowers: b.minCreatorFollowers,
+        avgCreatorFollowers: b.avgCreatorFollowers,
+        typicalFollowerMin: b.typicalFollowerMin,
+        typicalFollowerMax: b.typicalFollowerMax,
+        avgPartnerEngagement: b.avgPartnerEngagement ? Number(b.avgPartnerEngagement) : null,
+        avgPartnerViews: b.avgPartnerViews,
+        contentThemes: b.contentThemes as string[] | null,
+        creatorRegions: b.creatorRegions as string[] | null,
+        partnershipCount: b.partnershipCount,
+        lastPartnershipAt: b.lastPartnershipAt,
+        firstPartnershipAt: b.firstPartnershipAt,
+        sponsorshipFrequency: b.sponsorshipFrequency ? Number(b.sponsorshipFrequency) : null,
+        isVerifiedAccount: b.isVerifiedAccount,
+        typicalCreatorNiches: b.typicalCreatorNiches as string[] | null,
+        niche: b.niche,
+        category: b.category,
+      };
 
-      // 1. Niche alignment (30% weight)
-      const creatorNiche = creator.niche?.toLowerCase();
-      const brandCategory = b.category?.toLowerCase();
-      const brandNiche = b.niche?.toLowerCase();
-      const brandNiches = Array.isArray(b.typicalCreatorNiches)
-        ? (b.typicalCreatorNiches as string[]).map((n) => n.toLowerCase())
-        : [];
-
-      if (creatorNiche) {
-        if (
-          brandCategory === creatorNiche ||
-          brandNiche === creatorNiche ||
-          brandNiches.includes(creatorNiche)
-        ) {
-          score += 25;
-          reasons.push(`Partners with ${creatorNiche} creators`);
-        } else if (
-          brandNiches.some(
-            (n) => n.includes(creatorNiche) || creatorNiche.includes(n)
-          )
-        ) {
-          score += 15;
-          reasons.push("Related niche alignment");
-        }
-      }
-
-      // 2. Follower range fit (25% weight)
-      const creatorFollowers = creator.followers || 0;
-      const avgCreatorFollowers = b.avgCreatorFollowers || 0;
-      const typicalMin = b.typicalFollowerMin || 0;
-      const typicalMax = b.typicalFollowerMax || Infinity;
-
-      if (creatorFollowers >= typicalMin && creatorFollowers <= typicalMax) {
-        score += 20;
-        reasons.push("Your follower count fits their typical range");
-      } else if (avgCreatorFollowers > 0) {
-        const ratio = creatorFollowers / avgCreatorFollowers;
-        if (ratio >= 0.5 && ratio <= 2) {
-          score += 15;
-          reasons.push("Similar creator size to their partners");
-        } else if (ratio >= 0.2 && ratio <= 5) {
-          score += 8;
-        }
-      }
-
-      // 3. Activity score (15% weight)
-      const partnershipCount = b.partnershipCount || 0;
-      if (partnershipCount >= 5) {
-        score += 12;
-        reasons.push(`Very active (${partnershipCount} recent partnerships)`);
-      } else if (partnershipCount >= 2) {
-        score += 8;
-        reasons.push(`Active (${partnershipCount} recent partnerships)`);
-      } else if (partnershipCount >= 1) {
-        score += 4;
-      }
-
-      // 4. Recency bonus (10% weight)
-      if (b.lastPartnershipAt) {
-        const daysSince = Math.floor(
-          (Date.now() - new Date(b.lastPartnershipAt).getTime()) /
-            (1000 * 60 * 60 * 24)
-        );
-        if (daysSince <= 7) {
-          score += 8;
-          reasons.push("Partnered with creators this week");
-        } else if (daysSince <= 30) {
-          score += 5;
-          reasons.push("Partnered with creators this month");
-        }
-      }
-
-      // 5. Verified brand bonus
-      if (b.isVerifiedAccount) {
-        score += 3;
-      }
-
-      // Cap at 100
-      score = Math.min(score, 100);
-
-      // Ensure at least one reason
-      if (reasons.length === 0) {
-        reasons.push("Brand sponsors creators on Instagram");
-      }
+      const analysis = calculateFitAnalysis(creatorData, brandData);
 
       return {
         id: b.id,
@@ -176,8 +139,10 @@ export async function GET(request: NextRequest) {
         activityScore: b.activityScore,
         bio: b.bio,
         isVerifiedAccount: b.isVerifiedAccount,
-        matchScore: score,
-        matchReasons: reasons,
+        matchScore: analysis.overallScore,
+        matchReasons: analysis.strengths.length > 0
+          ? analysis.strengths.slice(0, 3)
+          : ["Brand sponsors creators on Instagram"],
       };
     });
 
@@ -187,9 +152,9 @@ export async function GET(request: NextRequest) {
       .slice(0, 50);
 
     // Get stats
-    const excellentMatches = sortedMatches.filter((m) => m.matchScore >= 85).length;
+    const excellentMatches = sortedMatches.filter((m) => m.matchScore >= 80).length;
     const goodMatches = sortedMatches.filter(
-      (m) => m.matchScore >= 70 && m.matchScore < 85
+      (m) => m.matchScore >= 60 && m.matchScore < 80
     ).length;
 
     return NextResponse.json({

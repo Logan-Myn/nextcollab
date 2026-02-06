@@ -69,7 +69,7 @@ export function StepConfigure({
       <BlurFade delay={0.05}>
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm">
           <p className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-3">
-            Pitching To
+            Pitch for
           </p>
 
           <div className="flex items-center gap-3">
