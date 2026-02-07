@@ -442,7 +442,7 @@ function UnifiedCreatorView({
       )}
 
       {/* SSE Progress bar */}
-      {isMyProfile && (sseStatus === "connecting" || sseStatus === "streaming" || sseStatus === "idle") && (
+      {showSSEProgress && (
         <BlurFade delay={0}>
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
