@@ -36,7 +36,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { NumberTicker } from "@/components/ui/number-ticker";
-import { TextAnimate } from "@/components/ui/text-animate";
 import { MagicCard } from "@/components/ui/magic-card";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -507,10 +506,32 @@ function UnifiedCreatorView({
               </div>
 
               <div className="flex items-center gap-2 mt-1 flex-wrap text-sm">
-                {profile.niche && (
+                {e?.contentThemes && e.contentThemes.length > 0 ? (
+                  e.contentThemes.map((theme: string) => (
+                    <Badge key={theme} variant="default" className="text-xs py-0.5 capitalize">{theme}</Badge>
+                  ))
+                ) : profile.niche ? (
                   <Badge variant="default" className="text-xs py-0.5 capitalize">{profile.niche}</Badge>
-                )}
+                ) : null}
                 <span className="text-[var(--muted)]">@{profile.username}</span>
+                {e?.locationDisplay && (
+                  <>
+                    <span className="text-[var(--border)]">&middot;</span>
+                    <span className="text-[var(--muted)] flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {e.locationDisplay}
+                    </span>
+                  </>
+                )}
+                {e?.primaryLanguage && (
+                  <>
+                    <span className="text-[var(--border)]">&middot;</span>
+                    <span className="text-[var(--muted)] flex items-center gap-1">
+                      <Languages className="w-3 h-3" />
+                      <span className="uppercase">{e.primaryLanguage}</span>
+                    </span>
+                  </>
+                )}
                 {profile.externalUrl && (
                   <>
                     <span className="text-[var(--border)]">&middot;</span>
@@ -526,6 +547,18 @@ function UnifiedCreatorView({
                   </>
                 )}
               </div>
+              {e?.subNiches && e.subNiches.length > 0 && (
+                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                  {e.subNiches.map((niche: string) => (
+                    <span
+                      key={niche}
+                      className="text-xs px-2 py-0.5 rounded-full bg-[var(--surface-elevated)] text-[var(--muted)] capitalize"
+                    >
+                      {niche}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="shrink-0 px-3 py-1.5 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-sm font-medium">
@@ -719,86 +752,6 @@ function UnifiedCreatorView({
               </BlurFade>
             )}
 
-            {/* AI Insights */}
-            {e && hasAi && (
-              <BlurFade delay={0.2}>
-                <div className="bg-[var(--surface)] rounded-xl shadow-md p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Sparkles className="w-4 h-4 text-[var(--accent)]" />
-                    <h3 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
-                      AI Insights
-                    </h3>
-                  </div>
-
-                  {e.contentThemes && e.contentThemes.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-sm text-[var(--muted)] mb-2">Content Themes</p>
-                      <div className="flex flex-wrap gap-2">
-                        {e.contentThemes.map((theme: string) => (
-                          <TextAnimate
-                            key={theme}
-                            as="span"
-                            animation="blurInUp"
-                            by="text"
-                            startOnView={false}
-                            className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-sm font-medium capitalize"
-                          >
-                            {theme}
-                          </TextAnimate>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {e.subNiches && e.subNiches.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-sm text-[var(--muted)] mb-2">Sub-niches</p>
-                      <div className="flex flex-wrap gap-2">
-                        {e.subNiches.map((niche: string) => (
-                          <span
-                            key={niche}
-                            className="px-3 py-1.5 rounded-full bg-[var(--surface-elevated)] text-sm capitalize"
-                          >
-                            {niche}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap items-center gap-4 mt-3">
-                    {e.locationDisplay && (
-                      <div className="flex items-center gap-1.5 text-sm text-[var(--muted)]">
-                        <MapPin className="w-4 h-4" />
-                        <span>{e.locationDisplay}</span>
-                      </div>
-                    )}
-                    {e.primaryLanguage && (
-                      <div className="flex items-center gap-1.5 text-sm text-[var(--muted)]">
-                        <Languages className="w-4 h-4" />
-                        <span className="uppercase">{e.primaryLanguage}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </BlurFade>
-            )}
-
-            {/* AI skeleton during SSE */}
-            {isMyProfile && isStreaming && !hasAi && (
-              <div className="bg-[var(--surface)] rounded-2xl shadow-lg p-6 animate-pulse">
-                <Skeleton className="h-5 w-32 mb-4" />
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} className="h-8 w-24 rounded-full" />
-                  ))}
-                </div>
-                <div className="flex gap-4">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              </div>
-            )}
 
             {/* About / Bio */}
             {profile.bio && (

@@ -279,6 +279,21 @@ export const pitchTemplate = pgTable("pitch_template", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Notification preferences
+export const notificationSettings = pgTable("notification_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => user.id, { onDelete: "cascade" }),
+  emailDigest: text("email_digest").notNull().default("weekly"), // 'daily', 'weekly', 'off'
+  matchAlerts: boolean("match_alerts").notNull().default(true),
+  outreachReminders: boolean("outreach_reminders").notNull().default(true),
+  productUpdates: boolean("product_updates").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Partnership tracker (CRM-lite) - Phase 2
 export const outreach = pgTable("outreach", {
   id: uuid("id").primaryKey().defaultRandom(),

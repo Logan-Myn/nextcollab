@@ -42,20 +42,15 @@ bun db:studio    # Open Drizzle Studio GUI
 
 ```
 ┌─────────────────┐     ┌─────────────────┐
-│  Vercel (Edge)  │────▶│   Neon (DB)     │
+│  OVH Server     │────▶│   Neon (DB)     │
 │  Next.js App    │     │   Postgres      │
-└────────┬────────┘     └─────────────────┘
-         │
-         │ Background jobs / Heavy processing
-         ▼
-┌─────────────────┐
-│  OVH Server     │
-│  - Redis        │
-│  - Backend API  │
-│  - Cron jobs    │
-│  - Staging      │
+│  + Redis        │     └─────────────────┘
+│  + Backend API  │
+│  + Cron jobs    │
 └─────────────────┘
 ```
+
+**Deployment:** Self-hosted on OVH server (Docker). No Vercel — do NOT deploy to Vercel.
 
 - Uses Next.js App Router (`src/app/`)
 - Path alias: `@/*` maps to `./src/*`
@@ -81,3 +76,4 @@ bun db:studio    # Open Drizzle Studio GUI
 
 - No Co-Author attribution on commits
 - Never deploy unless explicitly requested with "CPD" or "deploy"
+- Deployment is self-hosted on OVH (Docker) — never deploy to Vercel
