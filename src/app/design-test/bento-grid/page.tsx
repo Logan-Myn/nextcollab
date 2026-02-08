@@ -68,10 +68,9 @@ export default function BentoGridDesign() {
   const [filters, setFilters] = useState<BrandFilters>({
     tab: (searchParams.get("tab") as TabType) || "all",
     search: searchParams.get("q") || "",
-    category: searchParams.get("category") || "",
     activityLevel: searchParams.get("activityLevel") || "",
     creatorTier: (searchParams.get("creatorTier") as CreatorTier) || "",
-    sponsorsNiche: searchParams.get("sponsorsNiche") || "",
+    niche: searchParams.get("niche") || "",
     hasWebsite: searchParams.get("hasWebsite") === "true",
     sort: (searchParams.get("sort") as SortType) || "matchScore",
     page: 1,
@@ -126,14 +125,13 @@ export default function BentoGridDesign() {
     isLoading,
     error,
     pagination,
-    categories,
     hasMore,
     loadMore,
   } = useBrands(filters, session?.user?.id);
 
   const hasProfile = !!profile?.instagramUsername;
   const topMatches = brands.filter((b) => (b.matchScore || 0) >= 70).slice(0, 4);
-  const activeFilterCount = [filters.category, filters.creatorTier, filters.sponsorsNiche, filters.hasWebsite].filter(Boolean).length;
+  const activeFilterCount = [filters.creatorTier, filters.niche, filters.hasWebsite].filter(Boolean).length;
 
   return (
     <DashboardShell
@@ -216,7 +214,7 @@ export default function BentoGridDesign() {
               <h3 className="font-semibold text-[#1D1D1F]">Filter Options</h3>
               <button
                 onClick={() => {
-                  setFilters(f => ({ ...f, category: "", creatorTier: "", sponsorsNiche: "", hasWebsite: false }));
+                  setFilters(f => ({ ...f, creatorTier: "", niche: "", hasWebsite: false }));
                 }}
                 className="text-sm text-[#0071E3] hover:underline"
               >
@@ -225,26 +223,6 @@ export default function BentoGridDesign() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Categories */}
-              <div>
-                <label className="block text-sm font-medium text-[#86868B] mb-3">Category</label>
-                <div className="flex flex-wrap gap-2">
-                  {CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.name}
-                      onClick={() => setFilters(f => ({ ...f, category: f.category === cat.name ? "" : cat.name }))}
-                      className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                        filters.category === cat.name
-                          ? "bg-[#1D1D1F] text-white"
-                          : "bg-[#F5F5F7] text-[#1D1D1F] hover:bg-[#E8E8ED]"
-                      }`}
-                    >
-                      {cat.icon} {cat.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Creator Tier */}
               <div>
                 <label className="block text-sm font-medium text-[#86868B] mb-3">Works with</label>
@@ -426,10 +404,9 @@ export default function BentoGridDesign() {
                   setFilters({
                     tab: "all",
                     search: "",
-                    category: "",
                     activityLevel: "",
                     creatorTier: "",
-                    sponsorsNiche: "",
+                    niche: "",
                     hasWebsite: false,
                     sort: "matchScore",
                     page: 1,

@@ -11,18 +11,12 @@ export type CreatorTier = "" | "nano" | "micro" | "mid" | "macro" | "mega";
 export interface BrandFilters {
   tab: TabType;
   search: string;
-  category: string;
   activityLevel: string; // "veryActive" | "active" | "rising" | ""
   creatorTier: CreatorTier; // matches avg_creator_followers
-  sponsorsNiche: string; // matches typical_creator_niches
+  niche: string; // matches typical_creator_niches
   hasWebsite: boolean;
   sort: SortType;
   page: number;
-}
-
-export interface CategoryCount {
-  name: string;
-  count: number;
 }
 
 export interface UseBrandsResult {
@@ -35,8 +29,6 @@ export interface UseBrandsResult {
     total: number;
     totalPages: number;
   };
-  categories: string[];
-  categoryCounts: CategoryCount[];
   creatorNiches: string[];
   hasMore: boolean;
   loadMore: () => void;
@@ -64,8 +56,6 @@ export function useBrands(
     total: 0,
     totalPages: 0,
   });
-  const [categories, setCategories] = useState<string[]>([]);
-  const [categoryCounts, setCategoryCounts] = useState<CategoryCount[]>([]);
   const [creatorNiches, setCreatorNiches] = useState<string[]>([]);
   const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
 
@@ -97,8 +87,6 @@ export function useBrands(
           }
 
           setPagination(json.pagination);
-          setCategories([]);
-          setCategoryCounts([]);
           setCreatorNiches([]);
         } else if (filters.tab === "forYou" && userId) {
           const res = await fetch(
@@ -118,12 +106,6 @@ export function useBrands(
             );
           }
 
-          if (filters.category) {
-            filteredBrands = filteredBrands.filter(
-              (b) => b.category === filters.category
-            );
-          }
-
           setBrands(filteredBrands);
           setMatchStats(json.stats);
           setPagination({
@@ -132,21 +114,15 @@ export function useBrands(
             total: filteredBrands.length,
             totalPages: 1,
           });
-
-          const uniqueCategories = [
-            ...new Set(json.data.map((b: BrandData) => b.category).filter(Boolean)),
-          ] as string[];
-          setCategories(uniqueCategories);
         } else {
           const params = new URLSearchParams();
           params.set("page", String(currentPage));
           params.set("limit", "20");
 
           if (filters.search) params.set("search", filters.search);
-          if (filters.category) params.set("category", filters.category);
           if (filters.activityLevel) params.set("activityLevel", filters.activityLevel);
           if (filters.creatorTier) params.set("creatorTier", filters.creatorTier);
-          if (filters.sponsorsNiche) params.set("sponsorsNiche", filters.sponsorsNiche);
+          if (filters.niche) params.set("sponsorsNiche", filters.niche);
           if (filters.hasWebsite) params.set("hasWebsite", "true");
 
           const sortMap: Record<SortType, string> = {
@@ -169,8 +145,6 @@ export function useBrands(
           }
 
           setPagination(json.pagination);
-          setCategories(json.filters?.categories || []);
-          setCategoryCounts(json.filters?.categoryCounts || []);
           setCreatorNiches(json.filters?.creatorNiches || []);
         }
       } catch (err) {
@@ -187,10 +161,9 @@ export function useBrands(
   }, [
     filters.tab,
     filters.search,
-    filters.category,
     filters.activityLevel,
     filters.creatorTier,
-    filters.sponsorsNiche,
+    filters.niche,
     filters.hasWebsite,
     filters.sort,
     userId,
@@ -211,8 +184,6 @@ export function useBrands(
     isLoading,
     error,
     pagination,
-    categories,
-    categoryCounts,
     creatorNiches,
     hasMore: pagination.page < pagination.totalPages,
     loadMore,

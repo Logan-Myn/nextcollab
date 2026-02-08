@@ -70,10 +70,9 @@ export default function GlassmorphismDesign() {
   const [filters, setFilters] = useState<BrandFilters>({
     tab: (searchParams.get("tab") as TabType) || "all",
     search: searchParams.get("q") || "",
-    category: searchParams.get("category") || "",
     activityLevel: searchParams.get("activityLevel") || "",
     creatorTier: (searchParams.get("creatorTier") as CreatorTier) || "",
-    sponsorsNiche: searchParams.get("sponsorsNiche") || "",
+    niche: searchParams.get("niche") || "",
     hasWebsite: searchParams.get("hasWebsite") === "true",
     sort: (searchParams.get("sort") as SortType) || "matchScore",
     page: 1,
@@ -128,7 +127,6 @@ export default function GlassmorphismDesign() {
     isLoading,
     error,
     pagination,
-    categories: fetchedCategories,
     hasMore,
     loadMore,
   } = useBrands(filters, session?.user?.id);
@@ -191,34 +189,7 @@ export default function GlassmorphismDesign() {
 
             {/* Filter Toggles */}
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Category Dropdown */}
-              <div className="relative group">
-                <button className="h-14 px-5 rounded-2xl bg-white/10 backdrop-blur border border-white/10 text-white font-medium hover:bg-white/15 hover:border-white/20 transition-all flex items-center gap-2">
-                  {filters.category || "Category"}
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                <div className="absolute top-full left-0 mt-2 w-48 p-2 rounded-2xl bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                  <button
-                    onClick={() => setFilters(f => ({ ...f, category: "" }))}
-                    className={`w-full text-left px-4 py-2.5 rounded-xl text-sm text-white/80 hover:bg-white/10 transition-all ${!filters.category ? "bg-white/10" : ""}`}
-                  >
-                    All Categories
-                  </button>
-                  {CATEGORIES.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setFilters(f => ({ ...f, category: cat }))}
-                      className={`w-full text-left px-4 py-2.5 rounded-xl text-sm text-white/80 hover:bg-white/10 transition-all ${filters.category === cat ? "bg-white/10" : ""}`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Creator Tier Filter */}
+                {/* Creator Tier Filter */}
               <div className="relative group">
                 <button className="h-14 px-5 rounded-2xl bg-white/10 backdrop-blur border border-white/10 text-white font-medium hover:bg-white/15 hover:border-white/20 transition-all flex items-center gap-2">
                   {filters.creatorTier ? CREATOR_TIERS.find(t => t.value === filters.creatorTier)?.label : "Works with"}
@@ -407,10 +378,9 @@ export default function GlassmorphismDesign() {
                   setFilters({
                     tab: "all",
                     search: "",
-                    category: "",
                     activityLevel: "",
                     creatorTier: "",
-                    sponsorsNiche: "",
+                    niche: "",
                     hasWebsite: false,
                     sort: "matchScore",
                     page: 1,

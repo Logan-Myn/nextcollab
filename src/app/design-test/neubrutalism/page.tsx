@@ -77,10 +77,9 @@ export default function NeubrutalismDesign() {
   const [filters, setFilters] = useState<BrandFilters>({
     tab: (searchParams.get("tab") as TabType) || "all",
     search: searchParams.get("q") || "",
-    category: searchParams.get("category") || "",
     activityLevel: searchParams.get("activityLevel") || "",
     creatorTier: (searchParams.get("creatorTier") as CreatorTier) || "",
-    sponsorsNiche: searchParams.get("sponsorsNiche") || "",
+    niche: searchParams.get("niche") || "",
     hasWebsite: searchParams.get("hasWebsite") === "true",
     sort: (searchParams.get("sort") as SortType) || "matchScore",
     page: 1,
@@ -135,14 +134,13 @@ export default function NeubrutalismDesign() {
     isLoading,
     error,
     pagination,
-    categories: fetchedCategories,
     hasMore,
     loadMore,
   } = useBrands(filters, session?.user?.id);
 
   const hasProfile = !!profile?.instagramUsername;
   const topMatches = brands.filter((b) => (b.matchScore || 0) >= 70).slice(0, 4);
-  const activeFilterCount = [filters.category, filters.creatorTier, filters.sponsorsNiche, filters.hasWebsite].filter(Boolean).length;
+  const activeFilterCount = [filters.creatorTier, filters.niche, filters.hasWebsite].filter(Boolean).length;
 
   return (
     <DashboardShell
@@ -270,7 +268,7 @@ export default function NeubrutalismDesign() {
               {activeFilterCount > 0 && (
                 <button
                   onClick={() => {
-                    setFilters(f => ({ ...f, category: "", creatorTier: "", sponsorsNiche: "", hasWebsite: false }));
+                    setFilters(f => ({ ...f, creatorTier: "", niche: "", hasWebsite: false }));
                   }}
                   className="text-sm font-bold text-[#FF6B6B] uppercase hover:underline"
                 >
@@ -280,29 +278,6 @@ export default function NeubrutalismDesign() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Categories */}
-              <div>
-                <label className="block font-black text-sm uppercase tracking-wider mb-3">Category</label>
-                <div className="flex flex-wrap gap-2">
-                  {CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.name}
-                      onClick={() => setFilters(f => ({ ...f, category: f.category === cat.name ? "" : cat.name }))}
-                      className={`px-4 py-2 border-3 border-black rounded-xl font-bold text-sm uppercase transition-all ${
-                        filters.category === cat.name
-                          ? "shadow-[3px_3px_0_0_#000] translate-x-0 translate-y-0"
-                          : "shadow-none translate-x-0.5 translate-y-0.5"
-                      }`}
-                      style={{
-                        backgroundColor: filters.category === cat.name ? cat.color : "#F5F5F5"
-                      }}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Creator Tier */}
               <div>
                 <label className="block font-black text-sm uppercase tracking-wider mb-3">Works With</label>
@@ -447,10 +422,9 @@ export default function NeubrutalismDesign() {
                   setFilters({
                     tab: "all",
                     search: "",
-                    category: "",
                     activityLevel: "",
                     creatorTier: "",
-                    sponsorsNiche: "",
+                    niche: "",
                     hasWebsite: false,
                     sort: "matchScore",
                     page: 1,

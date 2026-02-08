@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
 
     // Filters
     const search = searchParams.get("search");
-    const category = searchParams.get("category");
     const activityLevel = searchParams.get("activityLevel");
     const creatorTier = searchParams.get("creatorTier"); // nano, micro, mid, macro, mega
     const sponsorsNiche = searchParams.get("sponsorsNiche"); // filter by typical_creator_niches
@@ -34,10 +33,6 @@ export async function GET(request: NextRequest) {
           ilike(brand.bio, `%${search}%`)
         )
       );
-    }
-
-    if (category) {
-      conditions.push(eq(brand.category, category));
     }
 
     // Creator tier match - filter by avg_creator_followers range
@@ -126,15 +121,6 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    // Get unique categories for filters
-    const categoriesResult = await db
-      .selectDistinct({ category: brand.category })
-      .from(brand)
-      .where(sql`${brand.category} IS NOT NULL`);
-    const categories = categoriesResult
-      .map((c) => c.category)
-      .filter(Boolean) as string[];
-
     // Get unique creator niches from typical_creator_niches JSONB
     const creatorNichesResult = await db
       .select({
@@ -146,17 +132,6 @@ export async function GET(request: NextRequest) {
       creatorNichesResult.map((n) => n.niche).filter(Boolean)
     )] as string[];
 
-    // Get category counts for visual grid
-    const categoryCounts = await db
-      .select({
-        category: brand.category,
-        count: sql<number>`count(*)`,
-      })
-      .from(brand)
-      .where(sql`${brand.category} IS NOT NULL`)
-      .groupBy(brand.category)
-      .orderBy(sql`count(*) DESC`);
-
     return NextResponse.json({
       data: brands,
       pagination: {
@@ -166,11 +141,6 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
       filters: {
-        categories,
-        categoryCounts: categoryCounts.map(c => ({
-          name: c.category as string,
-          count: Number(c.count)
-        })),
         creatorNiches,
       },
     });

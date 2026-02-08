@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
-import { Search, Sparkles, Loader2, RefreshCw, ArrowRight, TrendingUp } from "lucide-react";
+import { Search, Sparkles, Loader2, RefreshCw, ArrowRight, Command, X, Flame } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { BrandCard, BrandCardCompact } from "@/components/brand-card";
 import { DiscoveryFilters } from "@/components/brand/discovery-filters";
@@ -44,10 +44,9 @@ export default function BrandDiscoveryPage() {
   const [filters, setFilters] = useState<BrandFilters>({
     tab: (searchParams.get("tab") as TabType) || "all",
     search: searchParams.get("q") || "",
-    category: searchParams.get("category") || "",
     activityLevel: searchParams.get("activity") || "",
     creatorTier: (searchParams.get("tier") as CreatorTier) || "",
-    sponsorsNiche: searchParams.get("niche") || "",
+    niche: searchParams.get("niche") || "",
     hasWebsite: searchParams.get("hasWebsite") === "true",
     sort: (searchParams.get("sort") as SortType) || "partnershipCount",
     page: 1,
@@ -102,7 +101,6 @@ export default function BrandDiscoveryPage() {
     isLoading,
     error,
     pagination,
-    categoryCounts,
     creatorNiches,
     hasMore,
     loadMore,
@@ -117,10 +115,9 @@ export default function BrandDiscoveryPage() {
     const params = new URLSearchParams();
     if (filters.tab !== "all") params.set("tab", filters.tab);
     if (filters.search) params.set("q", filters.search);
-    if (filters.category) params.set("category", filters.category);
     if (filters.activityLevel) params.set("activity", filters.activityLevel);
     if (filters.creatorTier) params.set("tier", filters.creatorTier);
-    if (filters.sponsorsNiche) params.set("niche", filters.sponsorsNiche);
+    if (filters.niche) params.set("niche", filters.niche);
     if (filters.hasWebsite) params.set("hasWebsite", "true");
     if (filters.sort !== "partnershipCount") params.set("sort", filters.sort);
 
@@ -132,10 +129,6 @@ export default function BrandDiscoveryPage() {
     setFilters((f) => ({ ...f, tab, page: 1 }));
   };
 
-  const handleCategoryChange = (category: string) => {
-    setFilters((f) => ({ ...f, category, page: 1 }));
-  };
-
   const handleActivityLevelChange = (activityLevel: string) => {
     setFilters((f) => ({ ...f, activityLevel, page: 1 }));
   };
@@ -144,8 +137,8 @@ export default function BrandDiscoveryPage() {
     setFilters((f) => ({ ...f, creatorTier, page: 1 }));
   };
 
-  const handleSponsorsNicheChange = (sponsorsNiche: string) => {
-    setFilters((f) => ({ ...f, sponsorsNiche, page: 1 }));
+  const handleNicheChange = (niche: string) => {
+    setFilters((f) => ({ ...f, niche, page: 1 }));
   };
 
   const handleHasWebsiteChange = (hasWebsite: boolean) => {
@@ -156,8 +149,25 @@ export default function BrandDiscoveryPage() {
     setFilters((f) => ({ ...f, sort, page: 1 }));
   };
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const topMatches = brands.filter((b) => (b.matchScore || 0) >= 70).slice(0, 6);
   const hasProfile = !!profile?.instagramUsername;
+  const excellentMatchCount = brands.filter((b) => (b.matchScore || 0) >= 85).length;
+
+  // Keyboard shortcut for search focus
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.key === "Escape" && searchFocused) {
+        searchInputRef.current?.blur();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [searchFocused]);
 
   return (
     <DashboardShell
@@ -165,71 +175,80 @@ export default function BrandDiscoveryPage() {
       profileLoading={profileLoading}
       onResync={handleResync}
     >
-      {/* Editorial Page Header */}
-      <header className="mb-10 animate-fade-up opacity-0" style={{ animationDelay: "0ms", animationFillMode: "forwards" }}>
-        <div className="flex items-end justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="font-[family-name:var(--font-display)] text-4xl lg:text-5xl font-semibold tracking-tight mb-3">
+      {/* Page Header */}
+      <header className="relative mb-10 animate-fade-up opacity-0" style={{ animationDelay: "0ms", animationFillMode: "forwards" }}>
+        <div className="flex items-end justify-between gap-6 flex-wrap">
+          <div className="space-y-2">
+            <h1 className="font-[family-name:var(--font-display)] text-4xl lg:text-5xl font-bold tracking-tight leading-[1.1]">
               Discover{" "}
-              <span className="italic text-[var(--accent)]">brands</span>
+              <span className="gradient-text italic">brands</span>
             </h1>
-            <p className="text-[var(--muted)] text-base lg:text-lg">
-              <span className="font-semibold text-[var(--foreground)] tabular-nums">
+            <p className="text-[var(--muted)] text-base lg:text-lg flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--foreground)] tabular-nums">
                 {formatNumber(pagination.total)}
-              </span>{" "}
+              </span>
               brands actively sponsoring creators
             </p>
           </div>
 
-          {/* Quick Stats Pill */}
-          {hasProfile && brands.length > 0 && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-[var(--accent-light)] rounded-full border border-[var(--accent)]/20">
-              <Sparkles className="w-4 h-4 text-[var(--accent)]" />
-              <span className="text-sm font-medium text-[var(--accent)]">
-                {brands.filter((b) => (b.matchScore || 0) >= 85).length} excellent matches
-              </span>
+          {/* Stats Pills */}
+          {hasProfile && brands.length > 0 && excellentMatchCount > 0 && (
+            <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[var(--shadow-sm)]">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[var(--foreground)] leading-tight tabular-nums">
+                  {excellentMatchCount} excellent {excellentMatchCount === 1 ? "match" : "matches"}
+                </p>
+                <p className="text-[0.6875rem] text-[var(--muted)] leading-tight">Based on your profile</p>
+              </div>
             </div>
           )}
         </div>
       </header>
 
-      {/* Search Bar - Editorial Style */}
+      {/* Search Bar */}
       <div
-        className={`relative mb-8 animate-fade-up opacity-0 transition-all duration-300 ${
-          searchFocused ? "scale-[1.01]" : ""
-        }`}
+        className="relative mb-8 animate-fade-up opacity-0"
         style={{ animationDelay: "50ms", animationFillMode: "forwards" }}
       >
         <div className={`relative overflow-hidden rounded-2xl transition-all duration-300 ${
           searchFocused
-            ? "ring-2 ring-[var(--accent)] shadow-[0_0_30px_rgba(131,58,180,0.15)]"
-            : "ring-1 ring-[var(--border)]"
+            ? "ring-2 ring-[var(--accent)] shadow-[var(--shadow-accent)]"
+            : "ring-1 ring-[var(--border)] shadow-[var(--shadow-sm)]"
         }`}>
           <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-200 ${
             searchFocused ? "text-[var(--accent)]" : "text-[var(--muted)]"
           }`} />
           <input
+            ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
             placeholder="Search brands, niches, or keywords..."
-            className="w-full h-14 pl-14 pr-14 bg-[var(--surface)] text-base placeholder:text-[var(--muted)] focus:outline-none transition-all"
+            className="w-full h-14 pl-14 pr-32 bg-[var(--surface)] text-base placeholder:text-[var(--muted)] focus:outline-none transition-all"
           />
-          {isLoading && (
-            <div className="absolute right-5 top-1/2 -translate-y-1/2">
-              <Loader2 className="w-5 h-5 text-[var(--accent)] animate-spin" />
-            </div>
-          )}
-          {!isLoading && searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--border)] transition-all"
-            >
-              <span className="text-xs font-medium">×</span>
-            </button>
-          )}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            {isLoading && (
+              <Loader2 className="w-4.5 h-4.5 text-[var(--accent)] animate-spin" />
+            )}
+            {!isLoading && searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--surface-elevated)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--border)] transition-all"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {!searchFocused && !searchQuery && (
+              <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-[0.6875rem] font-medium text-[var(--muted)] bg-[var(--surface-elevated)] border border-[var(--border)] rounded-lg">
+                <Command className="w-3 h-3" />K
+              </kbd>
+            )}
+          </div>
         </div>
       </div>
 
@@ -238,15 +257,12 @@ export default function BrandDiscoveryPage() {
         <DiscoveryFilters
           tab={filters.tab}
           onTabChange={handleTabChange}
-          category={filters.category}
-          onCategoryChange={handleCategoryChange}
-          categoryCounts={categoryCounts}
           activityLevel={filters.activityLevel}
           onActivityLevelChange={handleActivityLevelChange}
           creatorTier={filters.creatorTier}
           onCreatorTierChange={handleCreatorTierChange}
-          sponsorsNiche={filters.sponsorsNiche}
-          onSponsorsNicheChange={handleSponsorsNicheChange}
+          niche={filters.niche}
+          onNicheChange={handleNicheChange}
           creatorNiches={creatorNiches}
           hasWebsite={filters.hasWebsite}
           onHasWebsiteChange={handleHasWebsiteChange}
@@ -261,45 +277,44 @@ export default function BrandDiscoveryPage() {
         />
       </div>
 
-      {/* For You Carousel - Editorial Treatment */}
+      {/* For You Carousel */}
       {filters.tab === "forYou" && hasProfile && topMatches.length > 0 && (
         <section
           className="mb-10 animate-fade-up opacity-0"
           style={{ animationDelay: "150ms", animationFillMode: "forwards" }}
         >
-          {/* Section with gradient accent line */}
           <div className="relative p-6 lg:p-8 rounded-2xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
-            {/* Top accent line */}
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-60" />
+            {/* Top gradient accent */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-[image:var(--gradient-brand)] opacity-50" />
 
             <div className="flex items-start justify-between mb-6 gap-4">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] flex items-center justify-center shadow-lg shadow-[var(--accent)]/20">
-                  <Sparkles className="w-6 h-6 text-white" />
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-[image:var(--gradient-brand)] flex items-center justify-center shadow-[var(--shadow-accent)]">
+                  <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="font-[family-name:var(--font-display)] text-xl lg:text-2xl font-semibold mb-1">
+                  <h2 className="font-[family-name:var(--font-display)] text-xl lg:text-2xl font-bold leading-tight">
                     Picked for{" "}
-                    <span className="italic text-[var(--accent)]">
+                    <span className="gradient-text italic">
                       @{profile?.instagramUsername}
                     </span>
                   </h2>
-                  <p className="text-sm text-[var(--muted)]">
+                  <p className="text-sm text-[var(--muted)] mt-0.5">
                     Based on {profile?.niche || "your content"} · {formatNumber(profile?.followers || 0)} followers
                   </p>
                 </div>
               </div>
               <Link
                 href="/brand?tab=forYou"
-                className="group flex items-center gap-2 text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-dark)] transition-colors whitespace-nowrap"
+                className="group flex items-center gap-1.5 text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-dark)] transition-colors whitespace-nowrap"
               >
                 See all {brands.length}
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
               </Link>
             </div>
 
             {/* Horizontal scroll carousel */}
-            <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-[var(--border)] scrollbar-track-transparent">
+            <div className="flex gap-3.5 overflow-x-auto pb-2 -mx-2 px-2 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-[var(--border)] scrollbar-track-transparent">
               {topMatches.map((brand, index) => (
                 <Link
                   key={brand.id}
@@ -311,8 +326,8 @@ export default function BrandDiscoveryPage() {
                     opacity: 0
                   }}
                 >
-                  <div className="p-5 bg-[var(--surface-elevated)] border border-[var(--border)] rounded-xl transition-all duration-300 hover:border-[var(--accent)] hover:-translate-y-1 hover:shadow-lg hover:shadow-[var(--accent)]/5">
-                    {/* Avatar with glow on hover */}
+                  <div className="relative p-5 bg-[var(--surface-elevated)] border border-[var(--border)] rounded-xl transition-all duration-300 hover:border-[var(--accent)] hover:-translate-y-1 hover:shadow-[var(--shadow-md)]">
+                    {/* Avatar */}
                     <div className="relative mb-4">
                       {brand.profilePicture ? (
                         <Image
@@ -321,10 +336,10 @@ export default function BrandDiscoveryPage() {
                           width={56}
                           height={56}
                           unoptimized
-                          className="w-14 h-14 rounded-xl object-cover transition-transform group-hover:scale-105"
+                          className="w-14 h-14 rounded-xl object-cover ring-2 ring-[var(--border)] group-hover:ring-[var(--accent)] transition-all"
                         />
                       ) : (
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-dark)] flex items-center justify-center transition-transform group-hover:scale-105">
+                        <div className="w-14 h-14 rounded-xl bg-[image:var(--gradient-brand)] flex items-center justify-center ring-2 ring-transparent group-hover:ring-[var(--accent)] transition-all">
                           <span className="text-white font-bold text-xl">
                             {brand.name.charAt(0).toUpperCase()}
                           </span>
@@ -347,7 +362,7 @@ export default function BrandDiscoveryPage() {
                       @{brand.instagramUsername}
                     </p>
 
-                    {/* Match Score - Visual bar */}
+                    {/* Match Score */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className={`font-semibold ${
@@ -363,8 +378,8 @@ export default function BrandDiscoveryPage() {
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
                             (brand.matchScore || 0) >= 85
-                              ? "bg-gradient-to-r from-[var(--success)] to-emerald-400"
-                              : "bg-gradient-to-r from-[var(--accent)] to-[var(--accent-secondary)]"
+                              ? "bg-[var(--success)]"
+                              : "bg-[image:var(--gradient-brand)]"
                           }`}
                           style={{ width: `${brand.matchScore || 0}%` }}
                         />
@@ -378,31 +393,44 @@ export default function BrandDiscoveryPage() {
         </section>
       )}
 
-      {/* Rising Brands Section - Show on "all" tab */}
-      {filters.tab === "all" && !isLoading && brands.length > 0 && (
-        <section
-          className="mb-10 animate-fade-up opacity-0"
-          style={{ animationDelay: "200ms", animationFillMode: "forwards" }}
-        >
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-[var(--warning)]/5 to-transparent border border-[var(--warning)]/20">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-[var(--warning)]/10 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-[var(--warning)]" />
+      {/* Rising Brands Section */}
+      {filters.tab === "all" && !isLoading && brands.length > 0 && (() => {
+        const risingBrands = brands
+          .filter((b) => (b.partnershipCount || 0) >= 1 && (b.partnershipCount || 0) <= 3)
+          .slice(0, 3);
+        if (risingBrands.length === 0) return null;
+        return (
+          <section
+            className="mb-10 animate-fade-up opacity-0"
+            style={{ animationDelay: "200ms", animationFillMode: "forwards" }}
+          >
+            <div className="relative p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
+              {/* Top accent */}
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--warning)] to-transparent opacity-50" />
+
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--warning-light)] flex items-center justify-center">
+                    <Flame className="w-5 h-5 text-[var(--warning)]" />
+                  </div>
+                  <div>
+                    <h3 className="font-[family-name:var(--font-display)] text-lg font-bold leading-tight">Rising Brands</h3>
+                    <p className="text-xs text-[var(--muted)]">New to sponsorships · Less competition</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="font-[family-name:var(--font-display)] text-lg font-semibold">Rising Brands</h3>
-                <p className="text-xs text-[var(--muted)]">New to sponsorships · Less competition</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {brands
-                .filter((b) => (b.partnershipCount || 0) >= 1 && (b.partnershipCount || 0) <= 3)
-                .slice(0, 3)
-                .map((brand) => (
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {risingBrands.map((brand, idx) => (
                   <Link
                     key={brand.id}
                     href={`/brand/${brand.instagramUsername || brand.id}`}
-                    className="flex items-center gap-3 p-3 bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:border-[var(--warning)] transition-all group"
+                    className="flex items-center gap-3.5 p-3.5 bg-[var(--surface-elevated)] rounded-xl border border-[var(--border)] hover:border-[var(--warning)] hover:shadow-[var(--shadow-sm)] transition-all duration-200 group"
+                    style={{
+                      animation: `fade-up 0.35s ease-out forwards`,
+                      animationDelay: `${250 + idx * 60}ms`,
+                      opacity: 0
+                    }}
                   >
                     {brand.profilePicture ? (
                       <Image
@@ -411,57 +439,62 @@ export default function BrandDiscoveryPage() {
                         width={40}
                         height={40}
                         unoptimized
-                        className="w-10 h-10 rounded-lg object-cover"
+                        className="w-10 h-10 rounded-lg object-cover ring-1 ring-[var(--border)]"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-lg bg-[var(--warning)]/20 flex items-center justify-center">
-                        <span className="text-[var(--warning)] font-semibold">
+                      <div className="w-10 h-10 rounded-lg bg-[var(--warning-light)] flex items-center justify-center">
+                        <span className="text-[var(--warning)] font-bold text-sm">
                           {brand.name.charAt(0)}
                         </span>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium truncate group-hover:text-[var(--warning)] transition-colors">
+                      <h4 className="text-sm font-semibold truncate group-hover:text-[var(--warning)] transition-colors">
                         {brand.name}
                       </h4>
-                      <p className="text-xs text-[var(--muted)] truncate">
-                        {brand.category} · {formatNumber(brand.followers || 0)}
+                      <p className="text-xs text-[var(--muted)] truncate mt-0.5">
+                        {brand.category || brand.niche || "Brand"} · {formatNumber(brand.followers || 0)} followers
                       </p>
                     </div>
-                    <span className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider bg-[var(--warning)]/10 text-[var(--warning)] rounded-md">
+                    <span className="shrink-0 px-2.5 py-1 text-[0.625rem] font-bold uppercase tracking-widest bg-[var(--warning-light)] text-[var(--warning)] rounded-md">
                       New
                     </span>
                   </Link>
                 ))}
+              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        );
+      })()}
 
       {/* Content States */}
       {isLoading && brands.length === 0 ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="flex flex-col items-center gap-4">
+        <div className="flex items-center justify-center py-28">
+          <div className="flex flex-col items-center gap-5">
             <div className="relative">
               <div className="w-16 h-16 rounded-2xl bg-[var(--accent-light)] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-[var(--accent)] animate-spin" />
+                <Loader2 className="w-7 h-7 text-[var(--accent)] animate-spin" />
               </div>
-              <div className="absolute inset-0 rounded-2xl animate-ping bg-[var(--accent)]/20" style={{ animationDuration: "1.5s" }} />
+              <div className="absolute -inset-2 rounded-3xl bg-[var(--accent-light)] animate-pulse-soft" style={{ animationDuration: "2s" }} />
             </div>
-            <p className="text-sm text-[var(--muted)]">Finding brands for you...</p>
+            <div className="text-center">
+              <p className="text-sm font-medium text-[var(--foreground)] mb-1">Finding brands for you</p>
+              <p className="text-xs text-[var(--muted)]">This may take a moment...</p>
+            </div>
           </div>
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center py-24">
+        <div className="flex items-center justify-center py-28">
           <div className="text-center max-w-sm">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--error)]/10 flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">!</span>
+            <div className="w-16 h-16 rounded-2xl bg-[var(--error-light)] flex items-center justify-center mx-auto mb-5">
+              <RefreshCw className="w-7 h-7 text-[var(--error)]" />
             </div>
-            <h3 className="font-semibold mb-2">Something went wrong</h3>
-            <p className="text-sm text-[var(--muted)] mb-5">{error}</p>
+            <h3 className="font-[family-name:var(--font-display)] text-xl font-bold mb-2">Something went wrong</h3>
+            <p className="text-sm text-[var(--muted)] mb-6 leading-relaxed">{error}</p>
             <Button
               variant="outline"
               onClick={() => window.location.reload()}
+              className="gap-2"
             >
               <RefreshCw className="w-4 h-4" />
               Try Again
@@ -469,15 +502,15 @@ export default function BrandDiscoveryPage() {
           </div>
         </div>
       ) : brands.length === 0 ? (
-        <div className="flex items-center justify-center py-24">
+        <div className="flex items-center justify-center py-28">
           <div className="text-center max-w-md">
-            <div className="w-20 h-20 rounded-2xl bg-[var(--surface-elevated)] flex items-center justify-center mx-auto mb-5 border border-[var(--border)]">
-              <Search className="w-9 h-9 text-[var(--muted)]" />
+            <div className="w-20 h-20 rounded-2xl bg-[var(--surface-elevated)] flex items-center justify-center mx-auto mb-6 border border-[var(--border)]">
+              <Search className="w-8 h-8 text-[var(--muted)]" />
             </div>
-            <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold mb-2">
+            <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold mb-2">
               No brands found
             </h2>
-            <p className="text-[var(--muted)] mb-6">
+            <p className="text-[var(--muted)] text-sm mb-6 leading-relaxed">
               {filters.search
                 ? `No results for "${filters.search}". Try a different search term.`
                 : "Try adjusting your filters to see more results."}
@@ -488,10 +521,9 @@ export default function BrandDiscoveryPage() {
                 setFilters({
                   tab: "all",
                   search: "",
-                  category: "",
                   activityLevel: "",
                   creatorTier: "",
-                  sponsorsNiche: "",
+                  niche: "",
                   hasWebsite: false,
                   sort: "partnershipCount",
                   page: 1,
@@ -504,17 +536,22 @@ export default function BrandDiscoveryPage() {
         </div>
       ) : (
         <>
-          {/* Section Header */}
-          <div className="flex items-baseline justify-between mb-6">
-            <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold">
-              {filters.tab === "forYou"
-                ? "Your Matches"
-                : filters.tab === "saved"
-                  ? "Saved Brands"
-                  : "All Brands"}
-            </h2>
-            <span className="text-sm text-[var(--muted)] tabular-nums">
-              {brands.length} of {formatNumber(pagination.total)}
+          {/* Results Section Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold">
+                {filters.tab === "forYou"
+                  ? "Your Matches"
+                  : filters.tab === "saved"
+                    ? "Saved Brands"
+                    : "All Brands"}
+              </h2>
+              <span className="px-2.5 py-1 text-xs font-semibold tabular-nums text-[var(--muted)] bg-[var(--surface-elevated)] rounded-lg border border-[var(--border)]">
+                {formatNumber(pagination.total)}
+              </span>
+            </div>
+            <span className="text-xs text-[var(--muted)] tabular-nums">
+              Showing {brands.length} of {formatNumber(pagination.total)}
             </span>
           </div>
 
@@ -550,13 +587,13 @@ export default function BrandDiscoveryPage() {
 
           {/* Load More */}
           {hasMore && (
-            <div className="mt-10 text-center">
+            <div className="mt-12 flex flex-col items-center gap-3">
               <Button
                 variant="outline"
                 size="lg"
                 onClick={loadMore}
                 disabled={isLoading}
-                className="group"
+                className="group min-w-[200px]"
               >
                 {isLoading ? (
                   <>
@@ -564,14 +601,12 @@ export default function BrandDiscoveryPage() {
                     Loading...
                   </>
                 ) : (
-                  <>
-                    Load More Brands
-                    <span className="text-xs text-muted-foreground group-hover:text-primary ml-2">
-                      ({pagination.total - brands.length} remaining)
-                    </span>
-                  </>
+                  "Load More Brands"
                 )}
               </Button>
+              <p className="text-xs text-[var(--muted)] tabular-nums">
+                {pagination.total - brands.length} more {pagination.total - brands.length === 1 ? "brand" : "brands"} to explore
+              </p>
             </div>
           )}
         </>
